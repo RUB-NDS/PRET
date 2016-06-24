@@ -4,17 +4,18 @@
 
 ### The Files
 
-- `pret.py`:          Executable main program
-- `capabilities.py`:  Routines to check for printer langauge support
-- `printer.py`:       Generic code to describe a printer
-- `postscript.py`:    PS spezific code (inherits from class printer)
-- `pjl.py`:           PJL spezific code (inherits from class printer)
-- `pcl.py`:           PCL spezific code (inherits from class printer)
-- `helper.py`:        Help functions for output and debugging, logging, file system access, sending and recveiving via socket or character device and printer language constants
-- `codebook.py`:      static tabelle of PJL status/error codes
-- `fuzzer.py`:        Constants for file system fuzzing
-- `mibs/*`:           Printer specific MIBs used by snimpy
-- `db/*`:             database of supported models
+- `pret.py` -- Executable main program
+- `capabilities.py` -- Routines to check for printer langauge support
+- `printer.py` -- Generic code to describe a printer
+- `postscript.py` -- PS spezific code (inherits from class printer)
+- `pjl.py` -- PJL spezific code (inherits from class printer)
+- `pcl.py` -- PCL spezific code (inherits from class printer)
+- `helper.py` -- Help functions for output and debugging, logging, file system access, sending and recveiving via socket or character device and printer language constants
+- `codebook.py` -- Static tabelle of PJL status/error codes
+- `fuzzer.py` -- Constants for file system fuzzing
+- `mibs/*` -- Printer specific MIBs used by snimpy
+- `db/*` -- database of supported models
+- `lpd/*` -- Scripts for LPD fuzzing
 
 ### Installation
 
@@ -45,32 +46,18 @@ optional arguments:
     $ ./pret.py laserjet.lan ps
     $ ./pret.py /dev/usb/lp0 pjl
 
-###### Flags:
+###### Flags and Arguments:
 
 `--safe` tries to check via IPP, HTTP and SNMP if the selected printing language (PS/PJL/PCL) is acutally supported by the device before connection via port 9100/tcp. On non-networked connections (USB, parallel cable), this test will logically fail.
 
 `--quit` tries not to determine printer model when connection and supresses chit-chat.
 
-`--debug` erlaubt es zu sehen, welche PS/PJL/PCL Befehle tatsächlich
-        übertragen werden und was empfangen wird. Die Ausgabe ist
-        bewusst auf die eigentliche Druckersprache reduziert und
-        versucht jeglichen Overhead (z.B. Header) rauszufiltern
-        (siehe conn.beautify() in helper.py). Für den vollständigen
-        Traffic: wireshark. Debug kann auch bei Bedarf per 'debug'
-        Kommando innerhalb einer PRET-Session zu/abgeschaltet werden.
+`--debug` shows the PS/PJL/PCL commands actually sent and the feedback received.
+Not that the output is reduced to the printing language itself, header data and other overhead is filtered. If you want to see this, use wireshark. You can also enable debugging with the `debug` command within a PRET session.
 
-`--load`  erlaubt es, PRET-Kommandos aus einer Textdatei auszuführen
-        (sinnvoll z.B. für automatisierte Tests auf eine Vielzahl an
-        Geräten). Die Datei kann auch innerhalb einer PRET-Session
-        über das Kommando 'load' geladen werden.
+`--load file` reads and executes the PRET commands from a text file. This is usefull for automation. Files can also invoked later via the Alternatively, the `load` command can be invoked in a PRET session.
 
-`--log`   erlaubt es, die PS/PJL/PCL Befehle (inkl. Headern) in eine
-        Datei zu schreiben. Es handelt sich hier nicht um die Ausgabe
-        des Druckers, sondern um die dort hin gesendeten Rohdaten.
-        Dies ist sinnvoll, um sich einen "malicious print job" zu
-        erstellen, der dann beispielsweise auf anderem Wege ohne
-        Port-9100 Rückkanal an den Drucker geschickt werden kann
-        (siehe Table 9.1 - Printing Channels in der Thesis).
+`--log file` writes a copy of the raw PS/PJL/PCL datastream send to to printer into a file. This can be useful to built a malicious print job, deployed to another printer, not directly reachable via port 9100/tcp.
 
 ### Generic Commands
 
