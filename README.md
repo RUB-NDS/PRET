@@ -1,21 +1,22 @@
 ## PRET
 ### Printer Exploitation Toolkit
 
+Is your printer secure? Test 
 
 ### The Files
 
-- `pret.py` -- Executable main program
-- `capabilities.py` -- Routines to check for printer langauge support
-- `printer.py` -- Generic code to describe a printer
-- `postscript.py` -- PS spezific code (inherits from class printer)
-- `pjl.py` -- PJL spezific code (inherits from class printer)
-- `pcl.py` -- PCL spezific code (inherits from class printer)
-- `helper.py` -- Help functions for output and debugging, logging, file system access, sending and recveiving via socket or character device and printer language constants
-- `codebook.py` -- Static tabelle of PJL status/error codes
-- `fuzzer.py` -- Constants for file system fuzzing
-- `mibs/*` -- Printer specific MIBs used by snimpy
-- `db/*` -- database of supported models
-- `lpd/*` -- Scripts for LPD fuzzing
+- `pret.py` - Executable main program
+- `capabilities.py` - Routines to check for printer langauge support
+- `printer.py` - Generic code to describe a printer
+- `postscript.py` - PS spezific code (inherits from class printer)
+- `pjl.py` - PJL spezific code (inherits from class printer)
+- `pcl.py` - PCL spezific code (inherits from class printer)
+- `helper.py` - Help functions for output and debugging, logging, file system access, sending and recveiving via socket or character device and printer language constants
+- `codebook.py` - Static tabelle of PJL status/error codes
+- `fuzzer.py` - Constants for file system fuzzing
+- `mibs/*` - Printer specific MIBs used by snimpy
+- `db/*` - database of supported models
+- `lpd/*` - Scripts for LPD fuzzing
 
 ### Installation
 
@@ -48,16 +49,11 @@ optional arguments:
 
 ###### Flags and Arguments:
 
-`--safe` tries to check via IPP, HTTP and SNMP if the selected printing language (PS/PJL/PCL) is acutally supported by the device before connection via port 9100/tcp. On non-networked connections (USB, parallel cable), this test will logically fail.
-
-`--quit` tries not to determine printer model when connection and supresses chit-chat.
-
-`--debug` shows the PS/PJL/PCL commands actually sent and the feedback received.
-Not that the output is reduced to the printing language itself, header data and other overhead is filtered. If you want to see this, use wireshark. You can also enable debugging with the `debug` command within a PRET session.
-
-`--load file` reads and executes the PRET commands from a text file. This is usefull for automation. Files can also invoked later via the Alternatively, the `load` command can be invoked in a PRET session.
-
-`--log file` writes a copy of the raw PS/PJL/PCL datastream send to to printer into a file. This can be useful to built a malicious print job, deployed to another printer, not directly reachable via port 9100/tcp.
+`--safe` tries to check via IPP, HTTP and SNMP if the selected printing language (PS/PJL/PCL) is actually supported by the device before connection via port 9100/tcp. On non-networked connections (USB, parallel cable), this test will fail.
+`--quit` suppresses printer model determination, intro and other chit-chat.
+`--debug` shows the PS/PJL/PCL commands actually sent to the device and the feedback received. Note that header data and other overhead is filtered. The see the whole traffic, use e.g. wireshark. You can switch debugging on/off within a PRET session using the `debug` command 
+`--load file` reads and executes PRET commands from a text file. This is usefull for automation. Such command files can also invoked later via the `load` command directly within a PRET session.
+`--log file` writes a copy of the raw PS/PJL/PCL datastream send to to printer into a file. This can be useful to build a malicious print job, which should be deployed to another printer not directly reachable via port 9100/tcp.
 
 ### Generic Commands
 
