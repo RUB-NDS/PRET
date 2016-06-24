@@ -1,7 +1,7 @@
 ## PRET
 ### Printer Exploitation Toolkit
 
-Is your printer secure? Test 
+Is your printer secure? Test it before someone else does.
 
 ### The Files
 
