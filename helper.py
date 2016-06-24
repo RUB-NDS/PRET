@@ -248,25 +248,25 @@ class conn(object):
     # crop uel sequence at the beginning
     data = re.sub(r'(^' + const.UEL + ')', '', data)
     '''
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │ delimiters -- note that carriage return (0d) is optional in ps/pjl  │
-    ├─────────────────────────┬─────────────────────┬─────────────────────┤
-    │                         │         PJL         │      PostScript     │
-    ├─────────────────────────┼─────────┬───────────┼────────┬────────────┤
-    │                         │ send    │ recv      │ send   │ recv       │
-    ├─────────────────────────┼─────────┼───────────┼────────┼────────────┤
-    │ normal commands (ascii) │ 0d? 0a  │ 0d+ 0a 0c │ 0d? 0a │ 0d? 0a 04? │
-    ├─────────────────────────┼─────────┼───────────┼────────┼────────────┤
-    │ file transfers (binary) │ 0d? 0a  │ 0c        │ 0d? 0a │ -          │
-    └─────────────────────────┴─────────┴───────────┴────────┴────────────┘
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │ delimiters -- note that carriage return (0d) is optional in ps/pjl      │
+    ├─────────────────────────┬─────────────────────────┬─────────────────────┤
+    │                         │           PJL           │      PostScript     │
+    ├─────────────────────────┼─────────┬───────────────┼────────┬────────────┤
+    │                         │ send    │ recv          │ send   │ recv       │
+    ├─────────────────────────┼─────────┼───────────────┼────────┼────────────┤
+    │ normal commands (ascii) │ 0d? 0a  │ 0d+ 0a 0c 04? │ 0d? 0a │ 0d? 0a 04? │
+    ├─────────────────────────┼─────────┼───────────────┼────────┼────────────┤
+    │ file transfers (binary) │ 0d? 0a  │ 0c            │ 0d? 0a │ -          │
+    └─────────────────────────┴─────────┴───────────────┴────────┴────────────┘
     '''
     # crop end-of-transmission chars
     if self.mode == 'ps':
       data = re.sub(r'^\x04', '', data)
-      if not binary: data = re.sub(r'\x0d?\x0a$', '', data)
+      if not binary: data = re.sub(r'\x0d?\x0a\x04?$', '', data)
     else: # pjl and pcl mode
       if binary: data = re.sub(r'\x0c$', '', data)
-      else: data = re.sub(r'\x0d+\x0a?\x0c$', '', data)
+      else: data = re.sub(r'\x0d+\x0a?\x0c\x04?$', '', data)
     # crop whitespaces/newline as feedback
     if not binary: data = data.strip()
     return data

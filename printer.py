@@ -102,12 +102,11 @@ class printer(cmd.Cmd, object):
 
   # --------------------------------------------------------------------
   # catch-all wrapper to guarantee continuation on unhandled exceptions
-  # TBD: enable this on production code
-  # def onecmd(self, line):
-  #   try:
-  #     cmd.Cmd.onecmd(self, line)
-  #   except Exception as e:
-  #     output().errmsg("Program Error", str(e))
+  def onecmd(self, line):
+    try:
+      cmd.Cmd.onecmd(self, line)
+    except Exception as e:
+      output().errmsg("Program Error", str(e))
 
   # ====================================================================
 
@@ -143,7 +142,7 @@ class printer(cmd.Cmd, object):
     data = file().read(arg) or ""
     for cmd in data.splitlines():
       # simulate command prompt
-      sys.stdout.write(self.prompt + cmd)
+      print(self.prompt + cmd)
       # execute command with premcd
       self.onecmd(self.precmd(cmd))
 
