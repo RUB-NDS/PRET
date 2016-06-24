@@ -40,9 +40,9 @@ optional arguments:
 
 `--debug` shows the PS/PJL/PCL commands actually sent to the device and the feedback received. Note that header data and other overhead is filtered. The see the whole traffic, use e.g. wireshark. You can switch debugging on/off within a PRET session using the `debug` command 
 
-`--load file` reads and executes PRET commands from a text file. This is usefull for automation. Such command files can also invoked later via the `load` command directly within a PRET session.
+`--load filename` reads and executes PRET commands from a text file. This is usefull for automation. Such command files can also invoked later via the `load` command directly within a PRET session.
 
-`--log file` writes a copy of the raw PS/PJL/PCL datastream send to to printer into a file. This can be useful to build a malicious print job, which should be deployed to another printer not directly reachable via port 9100/tcp.
+`--log filename` writes a copy of the raw PS/PJL/PCL datastream send to to printer into a file. This can be useful to build a malicious print job, which should be deployed to another printer not directly reachable via port 9100/tcp.
 
 ### Generic Commands
 
