@@ -1,0 +1,105 @@
+
+   ################# Poor Man's #################
+    Line Printer Daemon Protocol (RFC 1179) Test
+     ...for very, very old flaws and weaknesses
+   ##############################################
+
+BSD 4.4 lpd had some security problems documented here:
+http://insecure.org/sploits/lpd.protocol.problems.html
+
+Some implemenations of the lpd protocol running on network
+printers might still be vulnerable. The `lpdprint' program
+simply sends a file to a host with a line printer daemon on
+port 515. The `lpdtest' program however tries to abuse some
+of the vulns from the past...
+
+Get ready for time travel to the 90s!
+
+------------------------[ Usage ]-------------------------
+
+Usage: lpdtest hostname {get,put,rm,in,mail} argument
+
+Positional arguments:
+  hostname              printer ip address or hostname
+  {get,put,rm,in,mail}  select lpd proto security test
+  argument              specific to test, see examples
+
+----------------------[ 'get' Test ]----------------------
+
+Try to get (aka print) a file from printer's file system.
+The 'f' command (print plain file) is used for this. RFC
+1179 allows the definition of a filename, different than
+the one defined in the `receive data file' command. This
+should normally be ignored but might be interpreted:
+
+$ lpdtest printer get /etc/passwd
+$ lpdtest printer get ../../../etc/passwd
+  ...etc.
+
+----------------------[ 'put' Test ]----------------------
+
+Try to upload a file to printer's file system. The file
+name operators of the '2' and '3' commands (receive data
+file or control file) is used for this. Values SOULD be:
+
+data:  cfA || three digit job number || client hostname
+ctrl:  dfA || three digit job number || client hostname
+
+However any filename might work and therefore cause lpd
+implementations with spool dir to write arbitrary files:
+
+$ lpdtest printer put /path/to/file
+
+----------------------[ 'rm' Test ]-----------------------
+
+Try to unlink (aka delete) file on printer's file system.
+The 'U' command (unlink data file) is used for this. RFC
+1179 allows the definition of a filename, different than
+the one defined in the `receive data file' command. This
+should normally be ignored but might be interpreted.
+
+Let's test it:
+
+$ lpdtest printer rm /path/to/file
+
+----------------------[ 'in' Test ]-----------------------
+
+This test is for fuzzing around with user input (hostname,
+username, jobname, filenames, etc.). This might be useful
+to test for interpretation of shell commands by some lpd
+implementations or used filters:
+
+# Test for environment variables
+$ lpdtest printer in '$UID'
+
+# Test for pipes and redirects
+$ lpdtest printer in '| pwd'
+$ lpdtest printer in '>> /etc/passwd'
+
+# Test for backticks
+$ lpdtest printer in '`ls`'
+
+# Test for shellshock (CVE-2014-6271)
+$ lpdtest printer in '() {:;}; /bin/ping -c1 1.2.3.4'
+
+# Test for glibc vuln (CVE-2015-7547)
+$ lpdtest printer in evil.com
+  ...then sniff for dns queries to evil.com
+
+This can also be used for simple buffer overflow tests.
+RFC 1179 specifies a maximum length for user-/hostnames
+(31 bytes), filenames (131 bytes), job names (99 bytes)
+or job titles (79 bytes). To crash various HP LaserJet
+printers, use something like this:
+
+$ lpdtest printer in "`python -c 'print "x"*100'`"
+
+----------------------[ 'mail Test ]----------------------
+
+Try to send job information to a specified email address.
+The 'M' command (mail when printed) in combination with
+the 'H' command (host name) is used for this. The feature
+be abused for spamming and should never be enabled in any
+current lpd implemenation. Testing is as simple as this:
+
+$ lpdtest printer mail lpdtest@dontsendmesapm.de
