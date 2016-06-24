@@ -4,17 +4,17 @@
 
 ### The Files
 
-* pret.py:          Executable main program
-* capabilities.py:  Routines to check for printer langauge support
-* printer.py:       Generic code to describe a printer
-* postscript.py:    PS spezific code (inherits from class printer)
-* pjl.py:           PJL spezific code (inherits from class printer)
-* pcl.py:           PCL spezific code (inherits from class printer)
-* helper.py:        Help functions for output and debugging, logging, file system access, sending and recveiving via socket or character device and printer language constants
-* codebook.py:      static tabelle of PJL status/error codes
-* fuzzer.py:        Constants for file system fuzzing
-* mibs/*:           Printer specific MIBs used by snimpy
-* db/*:             database of supported models
+- `pret.py`:          Executable main program
+- `capabilities.py`:  Routines to check for printer langauge support
+- `printer.py`:       Generic code to describe a printer
+- `postscript.py`:    PS spezific code (inherits from class printer)
+- `pjl.py`:           PJL spezific code (inherits from class printer)
+- `pcl.py`:           PCL spezific code (inherits from class printer)
+- `helper.py`:        Help functions for output and debugging, logging, file system access, sending and recveiving via socket or character device and printer language constants
+- `codebook.py`:      static tabelle of PJL status/error codes
+- `fuzzer.py`:        Constants for file system fuzzing
+- `mibs/*`:           Printer specific MIBs used by snimpy
+- `db/*`:             database of supported models
 
 ### Installation
 
@@ -40,24 +40,18 @@ optional arguments:
   -o file, --log file   log raw data sent to the target
 ```
 
-Examples:
+###### Examples:
 
     $ ./pret.py laserjet.lan ps
     $ ./pret.py /dev/usb/lp0 pjl
 
-Flags:
+###### Flags:
 
---safe  versucht, vor dem Verbinden auf Port 9100 zu über IPP, HTTP
-        und SNMP herauszufinden, ob der Drucker die angegebene Sprache
-        (ps/pjl/pcl) überhaupt spricht (siehe capabilities.py bzw. die
-        TBD-Section 8.2. - Printer Discovery in der Thesis). Bei einer
-        Verbindung über USB/Parallel schlägt --safe logischerweise fehl.
+`--safe` tries to check via IPP, HTTP and SNMP if the selected printing language (PS/PJL/PCL) is acutally supported by the device before connection via port 9100/tcp. On non-networked connections (USB, parallel cable), this test will logically fail.
 
---quit  versucht nicht, anfangs das Druckermodell zu bestimmen und
-        unterdrückt nicht ganz so wichtige Ausgaben (sinnvoll für
-        automatisierte Tests).
+`--quit` tries not to determine printer model when connection and supresses chit-chat.
 
---debug erlaubt es zu sehen, welche PS/PJL/PCL Befehle tatsächlich
+`--debug` erlaubt es zu sehen, welche PS/PJL/PCL Befehle tatsächlich
         übertragen werden und was empfangen wird. Die Ausgabe ist
         bewusst auf die eigentliche Druckersprache reduziert und
         versucht jeglichen Overhead (z.B. Header) rauszufiltern
@@ -65,12 +59,12 @@ Flags:
         Traffic: wireshark. Debug kann auch bei Bedarf per 'debug'
         Kommando innerhalb einer PRET-Session zu/abgeschaltet werden.
 
---load  erlaubt es, PRET-Kommandos aus einer Textdatei auszuführen
+`--load`  erlaubt es, PRET-Kommandos aus einer Textdatei auszuführen
         (sinnvoll z.B. für automatisierte Tests auf eine Vielzahl an
         Geräten). Die Datei kann auch innerhalb einer PRET-Session
         über das Kommando 'load' geladen werden.
 
---log   erlaubt es, die PS/PJL/PCL Befehle (inkl. Headern) in eine
+`--log`   erlaubt es, die PS/PJL/PCL Befehle (inkl. Headern) in eine
         Datei zu schreiben. Es handelt sich hier nicht um die Ausgabe
         des Druckers, sondern um die dort hin gesendeten Rohdaten.
         Dies ist sinnvoll, um sich einen "malicious print job" zu
@@ -78,9 +72,9 @@ Flags:
         Port-9100 Rückkanal an den Drucker geschickt werden kann
         (siehe Table 9.1 - Printing Channels in der Thesis).
 
-### ----------------------[ GENERISCHE BEFEHLE ]----------------------
+### Generic Commands
 
-Nach dem Verbinden zu einem Drucker kommt man in die PRET-eigene Shell und kann -- ähnlich eines kommandozeilenbasierenden FTP-Clients -- verschiedene Kommandos ausführen, z.B.:
+After connecting to a printer (e.g. via network or USB cable), you will see the PRET shell and can execute various commands:
 
 ```
 $ ./pret.py laserjet.lan pjl
@@ -125,8 +119,9 @@ d        -   tmp
 laserjet.lan:/> exit
 ```
 
-Generische Kommandos sind:
+Generic commands are:
 
+```
 help     List available commands or get detailed help with 'help cmd'.
 debug    Enter debug mode. Use 'hex' for hexdump.
 load     Run commands from file:  load cmd.txt
@@ -135,12 +130,12 @@ open     Connect to remote device:  open <target>
 close    Disconnect from device.
 timeout  Set connection timeout:  timeout <seconds>
 site     Execute custom command on printer:  site <command>
-         (sinnvoll um PS/PJL/PCL Befehle die noch nicht implementiert
-         sind testweise direkt einzugeben und Ausgabe abzuwarten)
 exit     Exit the interpreter.
+```
 
-Generische (Datei-)operationen mit je spezifische Implementierung sind:
+Generic (file) operations with a PS/PJL/PCL specific implementation are:
 
+```
 ┌───────────┬─────┬─────┬─────┬────────────────────────────────────────┐
 │ Command   │ PS  │ PJL │ PCL │ Description                            │
 ├───────────┼─────┼─────┼─────┼────────────────────────────────────────┤
@@ -174,15 +169,19 @@ Generische (Datei-)operationen mit je spezifische Implementierung sind:
 │ df        │  ✓  │  ✓  │     │ Show volume information.               │
 │ free      │  ✓  │  ✓  │  ✓  │ Show available memory.                 │
 └───────────┴─────┴─────┴─────┴────────────────────────────────────────┘
+```
 
 ### Commands in PS mode
 
+```
 shell      Open interactive PostScript shell.
 uptime     Show system uptime (might be random).
 devices    Show available I/O devices.
+```
 
 ### Commands in PJL mode
 
+```
 status     Enable status messages.
 printenv   Show printer environment variable:  printenv <VAR>
 env        Show environment variables (alias for 'info variables').
@@ -214,22 +213,13 @@ info       Show information:  info <category>
   info status      - Provides the current printer status.
   info ustatus     - Lists the unsolicited status variables.
   info variables   - Lists printer's environment variables.
+```
 
-Viele Kommandos sind nur auf HP-Druckern möglich, da andere Hersteller
-meist nur eine Untermenge deren Standards implementiert haben. Dies gilt
-insbesondere für PML-basierende (siehe TBD-Subsection 2.3.3. - PML in
-der Thesis) Kommandos wie 'restart' und 'reset'. Druckjobs (nicht den
-aktuellen, sondern auch alle zukünftigen) via 'hold' auf dem Gerät zu
-speichern scheint nur bei Epson möglich. NVRAM auslesen geht nur auf
-Brother (und Konica Minolta?) Geräten. Dateisystemoperationen scheinen
-nur HP unterstüzt zu werden (inkl. Path Traversal). Xerox, Kyocera,
-Ricoh und Dell (wobei letztere nur rebranden und keine eigenen Drucker
-herstellen) erlauben zwar teilweise Dateisystemzugriff, aber nur auf ein
-bestimmtes, gesandboxtes Verzeichnis. Die Untersuchungen hierzu sind
-aber noch nicht abgeschlossen (TBD: Exploitation/Evaluation).
+Not that many commands are supported exclusively by HP printers, because other vendors have only implemented a subset of the PJL standard. This is especially true for PML based commands like `restart`or `reset`. Enabling long-term job retention via the `hold` command seems to be possible for Epson devices only. NVRAM access via the `nvram` command seems to work on printers by Brother (and Konica Minolta?). Access to the file system (inclusing path traversal) seems to be supported by HP only. Xerox, Kyocera, Ricoh and Dell (which only shell rebranded devices) do partially read/write operations, however limited to a certain, sandboxed directory.
 
 ### Commands in PCL mode
 
+```
 selftest   Perform printer self-test.
 info       Show information:  info <category>
   info fonts      - Show installed fonts.
@@ -237,6 +227,7 @@ info       Show information:  info <category>
   info patterns   - Show user-defined patterns.
   info symbols    - Show symbol sets.
   info extended   - Show extended fonts.
+```
 
 PCL is a very limited page description language without access to the file system. The to get/put/ls commands therefore use on a virtual file system based on PCL macros and mostly for the hack value :)
 
