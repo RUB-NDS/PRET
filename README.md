@@ -27,7 +27,7 @@ optional arguments:
   -o file, --log file   log raw data sent to the target
 ```
 
-###### Examples:
+###### Example usage:
 
     $ ./pret.py laserjet.lan ps
     $ ./pret.py /dev/usb/lp0 pjl
