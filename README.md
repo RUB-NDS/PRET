@@ -2,38 +2,30 @@
 ### Printer Exploitation Toolkit
 
 
-### Python Files
+### The Files
 
-* pret.py:          Ausführbares Hauptprogramm
-* capabilities.py:  Routinen zum Checken ob Sprache supported wird
+* pret.py:          Executable main program
+* capabilities.py:  Routines to check for printer langauge support
+* printer.py:       Generic code to describe a printer
+* postscript.py:    PS spezific code (inherits from class printer)
+* pjl.py:           PJL spezific code (inherits from class printer)
+* pcl.py:           PCL spezific code (inherits from class printer)
+* helper.py:        Help functions for output and debugging, logging, file system access, sending and recveiving via socket or character device and printer language constants
+* codebook.py:      static tabelle of PJL status/error codes
+* fuzzer.py:        Constants for file system fuzzing
+* mibs/*:           Printer specific MIBs used by snimpy
+* db/*:             database of supported models
 
-* printer.py:       Generischer Code der einen Drucker beschreibt
-* postscript.py:    PS-spezifischer Code (erbt von Klasse printer)
-* pjl.py:           PJL-spezifischer Code (erbt von Klasse printer)
-* pcl.py:           PCL-spezifischer Code (erbt von Klasse printer)
+### Installation
 
-* helper.py:        Hilfsfunktionen für Ausgaben und Debugging,
-                    Logging, Dateizugriff, Senden und Empfangen
-                    von Daten über Socket oder Character Device
-                    sowie druckerspezifische Konstanten
-* codebook.py:      Statische Tabelle an PJL Status/Error Codes
-* fuzzer.py:        Konstanten fürs Dateisystem-Fuzzing
-
-### ----------------------[ INSTALLATION ]----------------------
-
-Die folgenden 3rd-party Module werden von PRET benötigt (für farbenfrohe
-Ausgabe und SNMP-support, könnte ggf. zukünftig optional gemacht werden
-um Abhändigkeiten zu reduzieren und damit die Installation
-benutzerfreundlicher zu machen):
+PRET requires 3rd-party modules for colored output and SNMP support. For a quick install, use:
 
     # pip install colorama snimpy
 
-### -----------------------[ BENUTZUNG ]------------------------
+### Usage
 
 ```
 usage: pret.py [-h] [-s] [-q] [-d] [-i file] [-o file] target {ps,pjl,pcl}
-
-Printer Exploitation Toolkit.
 
 positional arguments:
   target                printer device or hostname
@@ -48,12 +40,12 @@ optional arguments:
   -o file, --log file   log raw data sent to the target
 ```
 
-Beispiel-Aufrufe:
+Examples:
 
     $ ./pret.py laserjet.lan ps
     $ ./pret.py /dev/usb/lp0 pjl
 
-Zuschaltbare Flags:
+Flags:
 
 --safe  versucht, vor dem Verbinden auf Port 9100 zu über IPP, HTTP
         und SNMP herauszufinden, ob der Drucker die angegebene Sprache
@@ -183,18 +175,13 @@ Generische (Datei-)operationen mit je spezifische Implementierung sind:
 │ free      │  ✓  │  ✓  │  ✓  │ Show available memory.                 │
 └───────────┴─────┴─────┴─────┴────────────────────────────────────────┘
 
-### ----------------------[ BEFEHLE IM MODUS 'ps' ]-----------------------
+### Commands in PS mode
 
 shell      Open interactive PostScript shell.
 uptime     Show system uptime (might be random).
 devices    Show available I/O devices.
 
-Es lässt sich bereits sagen: Dateisystemzugriff ist in PostScript
-wesentlich öfters möglich als in PJL. Inwieweit dies zu Code Execution
-oder ähnlich kritischen Sachen führt muss aber noch je nach Gerät
-analysiert werden (TBD: Exploitation/Evaluation).
-
-### ----------------------[ BEFEHLE IM MODUS 'pjl' ]----------------------
+### Commands in PJL mode
 
 status     Enable status messages.
 printenv   Show printer environment variable:  printenv <VAR>
@@ -241,7 +228,7 @@ herstellen) erlauben zwar teilweise Dateisystemzugriff, aber nur auf ein
 bestimmtes, gesandboxtes Verzeichnis. Die Untersuchungen hierzu sind
 aber noch nicht abgeschlossen (TBD: Exploitation/Evaluation).
 
-### ----------------------[ BEFEHLE IM MODUS 'pcl' ]----------------------
+### Commands in PCL mode
 
 selftest   Perform printer self-test.
 info       Show information:  info <category>
@@ -251,12 +238,6 @@ info       Show information:  info <category>
   info symbols    - Show symbol sets.
   info extended   - Show extended fonts.
 
-PCL ist eine sehr simple Seitenbeschreibungssprache ohne
-Dateisystemzugriff. Die in PRET implementierten put/get/ls Befehle
-arbeiten deshalb auf einem virtuellen, auf PCL-Macros basierenden
-Dateisystem welches eher für den Hack Value geschrieben wurde und keine
-Exploitation des realen Druckers-FS ermöglicht (siehe Presentation vom
-2016-06-06).
+PCL is a very limited page description language without access to the file system. The to get/put/ls commands therefore use on a virtual file system based on PCL macros and mostly for the hack value :)
 
-Happy Hacking!
-
+*Happy Hacking!*
