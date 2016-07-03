@@ -1,7 +1,7 @@
 ## PRET
 ### Printer Exploitation Toolkit
 
-Is your printer secure? Test it before someone else does...
+**Is your printer secure? Check before someone else does...**
 
 ### Installation
 
@@ -71,11 +71,11 @@ laserjet.lan:/> help
 
 Available commands (type help <topic>):
 =======================================
-append debug   edit     free   hold loop   offline  reset   status
-cat    delete  env      fsinit id   ls     open     restart timeout
-cd     df      exit     fuzz   info mirror printenv serial  touch
-chvol  disable find     get    load mkdir  put      set     traversal
-close  display firmware help   lock nvram  pwd      site    unlock
+append  debug    edit    free  id    ls       open      restart   timeout  
+cat     delete   env     fuzz  info  mirror   printenv  selftest  touch    
+cd      df       exit    get   load  mkdir    put       set       traversal
+chvol   disable  find    help  lock  nvram    pwd       site      unlock   
+close   display  format  hold  loop  offline  reset     status    version  
 
 laserjet.lan:/> ls ../../
 -      834   .profile
@@ -111,8 +111,6 @@ Generic (file) operations with a PS/PJL/PCL specific implementation are:
 ┌───────────┬─────┬─────┬─────┬────────────────────────────────────────┐
 │ Command   │ PS  │ PJL │ PCL │ Description                            │
 ├───────────┼─────┼─────┼─────┼────────────────────────────────────────┤
-│ id        │  ✓  │  ✓  │     │ Show device information.               │
-├───────────┼─────┼─────┼─────┼────────────────────────────────────────┤
 │ ls        │  ✓  │  ✓  │  ✓  │ List contents of remote directory.     │
 │ get       │  ✓  │  ✓  │  ✓  │ Receive file: get <file>               │
 │ put       │  ✓  │  ✓  │  ✓  │ Send file: put <local file>            │
@@ -124,14 +122,14 @@ Generic (file) operations with a PS/PJL/PCL specific implementation are:
 │ cat       │  ✓  │  ✓  │  ✓  │ Output remote file to stdout.          │
 │ edit      │  ✓  │  ✓  │  ✓  │ Edit remote files with vim.            │
 │ touch     │  ✓  │  ✓  │     │ Update file timestamps: touch <file>   │
-│ mkdir     │     │  ✓  │     │ Create remote directory: mkdir <path>  │
+│ mkdir     │  ✓  │  ✓  │     │ Create remote directory: mkdir <path>  │
 ├───────────┼─────┼─────┼─────┼────────────────────────────────────────┤
-│ cd        │  ✓  │  ✓  │     │ Change remote working directory        │
+│ cd        │  ✓  │  ✓  │     │ Change remote working directory.       │
 │ pwd       │  ✓  │  ✓  │     │ Show working directory on device.      │
 │ chvol     │  ✓  │  ✓  │     │ Change remote volume: chvol <volume>   │
 │ traversal │  ✓  │  ✓  │     │ Set path traversal: traversal <path>   │
 ├───────────┼─────┼─────┼─────┼────────────────────────────────────────┤
-│ fsinit    │ TBD │  ✓  │     │ Initialize printer's file system.      │
+│ format    │  ✓  │  ✓  │     │ Initialize printer's file system.      │
 │ fuzz      │  ✓  │  ✓  │     │ File system fuzzing: fuzz <category>   │
 ├─ ─ ─ ─ ─ ─┴─ ─ ─┴─ ─ ─┴─ ─ ─┴─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┤
 │   path   - Explore fs structure with path traversal strategies.      │
@@ -146,15 +144,23 @@ Generic (file) operations with a PS/PJL/PCL specific implementation are:
 ### Commands in PS mode
 
 ```
+id         Show device information.
+version    Show PostScript interpreter version.
 shell      Open interactive PostScript shell.
 uptime     Show system uptime (might be random).
 devices    Show available I/O devices.
+known      List supported PostScript operators:  known <operator>
+reset      Reset PostScript parameters to factory defaults.
+lock       Lock changing of system parameters.
+unlock     Unlock changing of system parameters.
 ```
 
 ### Commands in PJL mode
 
 ```
+id         Show device information.
 status     Enable status messages.
+version    Show firmware version or serial number (from 'info config').
 printenv   Show printer environment variable:  printenv <VAR>
 env        Show environment variables (alias for 'info variables').
 set        Set printer environment variable:  set <VAR=VALUE>
@@ -162,17 +168,16 @@ set        Set printer environment variable:  set <VAR=VALUE>
 display    Set printer's display message:  display <message>
 offline    Take printer offline and display message:  offline <message>
 restart    Restart printer.
-reset      Reset to factory defaults. (überschreibt z.B. Passwörter)
+reset      Reset to factory defaults.
+selftest   Perform various printer self-tests.
 disable    Disable printing functionality.
 
 lock       Lock control panel settings and disk write access.
 unlock     Unlock control panel settings and disk write access.
-hold       Enable job retention. (Scheint be Epson zu klappen)
-serial     Show serial number (from 'info config').
-firmware   Show firmware datecode/version (from 'info config')
+hold       Enable job retention.
 
 nvram      NVRAM operations:  nvram <operation>
-  nvram dump                 - Dump NVRAM to local file.
+  nvram dump [all]           - Dump (all) NVRAM to local file.
   nvram read addr            - Read single byte from address.
   nvram write addr value     - Write single byte to address.
 
