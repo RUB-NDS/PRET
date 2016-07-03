@@ -132,7 +132,7 @@ class postscript(printer):
     vol = "" if self.vol else "%*%" # search any volume if none specified
     # also lists 'hidden' .dotfiles; special treatment for brother devices
     str_recv = self.find(vol + path + "**") or self.find(vol + path + "*")
-    list = {self.normpath(name) for name in str_recv.splitlines()}
+    list = {name for name in str_recv.splitlines()}
     self.do_timeout(timeout_old, True)
     return sorted(list)
 

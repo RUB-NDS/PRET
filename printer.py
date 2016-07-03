@@ -57,7 +57,7 @@ class printer(cmd.Cmd, object):
     self.fuzz = False
     if newtarget:
       self.set_vol()
-      self.traversal = ""
+      self.set_traversal()
       self.disable = False
       self.error = None
       self.files = {}
@@ -253,8 +253,11 @@ class printer(cmd.Cmd, object):
       # set default volumes
       if self.mode == 'ps' : vol = c.PS_VOL
       if self.mode == 'pjl': vol = c.PJL_VOL
-    self.vol = vol
-    self.set_cwd()
+    if self.vol != vol:
+      # reset path traversal and cwd
+      self.set_traversal()
+      # set actual volume
+      self.vol = vol
 
   # get volume
   def get_vol(self):
@@ -266,15 +269,16 @@ class printer(cmd.Cmd, object):
   # ------------------------[ traversal <path> ]------------------------
   def do_traversal(self, arg):
     "Set path traversal:  traversal <path>"
-    if not arg or self.dir_exists(self.rpath(arg)):
+    if not arg or self.dir_exists(self.tpath(arg)):
       self.set_traversal(arg)
       print("Path traversal " + ("" if arg else "un") + "set.")
     else:
       print("Cannot use this path traversal.")
 
   # set path traversal
-  def set_traversal(self, traversal):
+  def set_traversal(self, traversal=''):
     self.traversal = traversal
+    if not traversal: self.set_cwd()
 
   # ------------------------[ cd <path> ]-------------------------------
   def do_cd(self, arg):
@@ -288,7 +292,7 @@ class printer(cmd.Cmd, object):
       print("Failed to change directory.")
 
   # set current working directory
-  def set_cwd(self, cwd=""):
+  def set_cwd(self, cwd=''):
     self.cwd = self.cpath(cwd) if cwd else ""
     self.set_prompt()
 
@@ -306,6 +310,12 @@ class printer(cmd.Cmd, object):
     return c.SEP if (path or self.cwd or self.traversal) else ''
 
   # --------------------------------------------------------------------
+  # get path without traversal and cwd information
+  def tpath(self, path):
+    # remove leading seperators
+    path = path.lstrip(c.SEP)
+    return self.vol + self.normpath(path)
+
   # get path without volume and traversal information
   def cpath(self, path):
     # generate virtual path on remote device
