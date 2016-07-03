@@ -27,14 +27,14 @@ class pjl(printer):
       # for commands that expect a response
       if wait:
         # use random token as delimiter PJL responses
-        str_recv = self.conn.recv_until("(@PJL ECHO\s+)?" + token + ".*$", wait, True, binary)
+        str_recv = self.conn.recv_until('(@PJL ECHO\s+)?' + token + '.*$', wait, True, binary)
         if self.status:
           # get status messages and remove them from received buffer
           str_stat = item(re.findall("@PJL INFO STATUS.*", str_recv, re.DOTALL))
-          str_recv = re.compile('@PJL INFO STATUS.*', re.DOTALL).sub('', str_recv)
+          str_recv = re.compile('\x0c?@PJL INFO STATUS.*', re.DOTALL).sub('', str_recv)
         if crop:
           # crop very first PJL line which is echoed by most interpreters
-          str_recv = re.sub(r'(^(\x00+)?@PJL.*(' + c.EOL + '|$))', '', str_recv)
+          str_recv = re.sub(r'^(\x00+)?@PJL.*' + c.EOL, '', str_recv)
       return self.pjl_err(str_recv, str_stat)
 
     # handle CTRL+C and exceptions
@@ -53,7 +53,9 @@ class pjl(printer):
 
   # disable unsolicited/conflicting status messages
   def on_connect(self, mode):
-    if mode == 'init': self.cmd('@PJL USTATUSOFF', False)
+    if mode == 'init': # only for the first connection attempt
+      self.cmd('@PJL USTATUSOFF', False) # disable status messages
+      self.cmd('@PJL SET TIMEOUT=255', False) # increase I/O timeout
 
   # ------------------------[ status ]----------------------------------
   def do_status(self, arg):
@@ -92,11 +94,12 @@ class pjl(printer):
 
   # --------------------------------------------------------------------
   # check if remote volume exists
-  def vol_exists(self, vol):
+  def vol_exists(self, vol=''):
     str_recv = self.cmd('@PJL INFO FILESYS')
-    for line in str_recv.splitlines():
-      if line.lstrip() and line.lstrip()[0].isdigit() and vol[0] == line.lstrip()[0]:
-        return True
+    vols = [line.lstrip()[0] for line in str_recv.splitlines()[1:]]
+    if vol: return vol[0] in vols # return availability
+    else: # return list of existing volumes for fuzzing
+      return [vol + ':' + c.SEP for vol in vols]
 
   # check if remote directory exists
   def dir_exists(self, path):
@@ -205,7 +208,8 @@ class pjl(printer):
     if not size:
       size = self.file_exists(path)
     if size != c.NONEXISTENT:
-      str_recv = self.cmd('@PJL FSUPLOAD NAME="' + path + '" OFFSET=0 SIZE=' + str(size), True, True, True)
+      str_recv = self.cmd('@PJL FSUPLOAD NAME="' + path
+      + '" OFFSET=0 SIZE=' + str(size), True, True, True)
       return (size, str_recv)
     else:
       print("File not found.")
@@ -286,21 +290,54 @@ class pjl(printer):
   def do_reset(self, arg):
     "Reset to factory defaults."
     if output().countdown("Restoring factory defaults in...", 10, self):
+      # reset nvram for pml-aware printers (hp)
       self.cmd('@PJL DMCMD ASCIIHEX="040006020501010301040106"', False)
-      # '@PJL SET SERVICEMODE=HPBOISEID' + c.EOL
-      # '@PJL CLEARNVRAM'                + c.EOL
-      # '@PJL NVRAMINIT'                 + c.EOL
-      # '@PJL SET SERVICEMODE=EXIT', False)
+      # this one might work on ancient laserjets
+      self.cmd('@PJL SET SERVICEMODE=HPBOISEID' + c.EOL
+             + '@PJL CLEARNVRAM'                + c.EOL
+             + '@PJL NVRAMINIT'                 + c.EOL
+             + '@PJL SET SERVICEMODE=EXIT', False)
 
-  # ------------------------[ fsinit ]----------------------------------
-  def do_fsinit(self, arg):
+  # ------------------------[ selftest ]--------------------------------
+  def do_selftest(self, arg):
+    "Perform various printer self-tests."
+    # pjl-based testpage commands
+    pjltests = ['SELFTEST',                 # pcl self-test 
+                'PCLTYPELIST',              # pcl typeface list
+                'CONTSELFTEST',             # continuous self-test
+                'PCLDEMOPAGE',              # pcl demo page
+                'PSCONFIGPAGE',             # ps configuration page
+                'PSTYPEFACELIST',           # ps typeface list
+                'PSDEMOPAGE',               # ps demo page
+                'EVENTLOG',                 # printer event log
+                'DATASTORE',                # pjl variables
+                'ERRORREPORT',              # error report
+                'SUPPLIESSTATUSREPORT']     # supplies status
+    for test in pjltests: self.cmd('@PJL SET TESTPAGE=' + test, False)
+    # pml-based testpage commands
+    pmltests = ['"04000401010502040103"',   # pcl self-test 
+                '"04000401010502040107"',   # drinter event log
+                '"04000401010502040108"',   # directory listing
+                '"04000401010502040109"',   # menu map
+                '"04000401010502040164"',   # usage page
+                '"04000401010502040165"',   # supplies page
+              # '"040004010105020401FC"',   # auto cleaning page
+              # '"0440004010105020401FD"',  # cleaning page
+                '"040004010105020401FE"',   # paper path test
+                '"040004010105020401FF"',   # registration page
+                '"040004010105020402015E"', # pcl font list
+                '"04000401010502040201C2"'] # ps font list
+    for test in pmltests: self.cmd('@PJL DMCMD ASCIIHEX=' + test, False)
+
+  # ------------------------[ format ]----------------------------------
+  def do_format(self, arg):
     "Initialize printer's mass storage file system."
     output().warning("Warning: Initializing the printer's file system will whipe-out all")
     output().warning("user data (e.g. stored jobs) on the volume. Press CTRL+C to abort.")
     if output().countdown("Initializing volume " + self.vol[:2] + " in...", 10, self):
       self.cmd('@PJL FSINIT VOLUME="' + self.vol[0] + '"', False)
 
-  # ------------------------[ disbale ]---------------------------------
+  # ------------------------[ disable ]---------------------------------
   def do_disable(self, arg):
     "Disable printing functionality."
     self.disable = not self.disable
@@ -311,29 +348,48 @@ class pjl(printer):
   # ------------------------[ hold ]------------------------------------
   def do_hold(self, arg):
     "Enable job retention."
+    self.chitchat("Setting job retention, reconnecting to see if still enabled")
     self.do_set('HOLD=ON')
-    output().raw("Job retention: ", "")
-    if self.do_info('variables', 'HOLD') == c.NONEXISTENT:
-      output().raw("not available")
+    self.do_close()
+    self.do_open(self.target, 'reconnect')
+    output().raw("Retention for future print jobs: ", '')
+    hold = self.do_info('variables', '^HOLD', False)
+    output().info(item(re.findall("=(.*)\s+\[", item(item(hold)))))
 
+  # ------------------------[ nvram ]-----------------------------------
   # nvram operations (brother-specific)
   def do_nvram(self, arg):
     # dump nvram
-    if arg == 'dump':
-      # interesting stuff can usually be found in those address spaces
-      memspace = range(0, 2048) + range(53248, 59648) # (32768, 36864), (53248, 118784)
-      commands = ['@PJL RNVRAM ADDRESS=' + str(n) for n in memspace]
-      steps = 2**8 # number of bytes to dump at once (feedback-performance trade-off)
+    if arg.startswith('dump'):
+      bs = 2**9    # memory block size used for sampling
+      max = 2**18  # maximum memory address for sampling
+      steps = 2**9 # number of bytes to dump at once (feedback-performance trade-off)
       outfile = self.basename(self.target) + '.nvram' # local copy of printer's nvram
+      # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # ******* sampling: populate memspace with valid addresses ******
+      if len(re.split("\s+", arg, 1)) > 1:
+        memspace = []
+        commands = ['@PJL RNVRAM ADDRESS=' + str(n) for n in range(0, max, bs)]
+        self.chitchat("Sampling memory space (bs=" + str(bs) + ", max=" + str(max) + ")")
+        for chunk in (list(chunks(commands, steps))):
+          str_recv = self.cmd(c.EOL.join(chunk))
+          # break on unsupported printers
+          if not str_recv: return
+          # collect valid memory addresses
+          blocks = re.findall('ADDRESS\s*=\s*(\d+)', str_recv)
+          for addr in blocks: memspace += range(int(addr), int(addr) + bs)
+          self.chitchat(str(len(blocks)) + " blocks found. ", '')
+      else: # use fixed memspace (quick & dirty but might cover interesting stuff)
+        memspace = range(0, 8192) + range(32768, 33792) + range(53248, 59648)
+      # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # ******* dumping: read nvram and write copy to local file ******
+      commands = ['@PJL RNVRAM ADDRESS=' + str(n) for n in memspace]
       self.chitchat("Writing copy to " + outfile)
       file().write(outfile, '') # first write empty file
-      # read nvram and write to local file
       for chunk in (list(chunks(commands, steps))):
         str_recv = self.cmd(c.EOL.join(chunk))
         # break on unsupported printers
-        if not str_recv:
-          os.remove(outfile)
-          return
+        if not str_recv: return os.remove(outfile)
         for data in re.findall('DATA\s*=\s*(\d+)', str_recv):
           char = chr(int(data))
           # append char to file
@@ -341,14 +397,16 @@ class pjl(printer):
           # print char to screen
           output().raw(char if int(data) in range(32, 127) else '.', "")
       print
-    # read nvram
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # read nvram (single byte)
     elif arg.startswith('read'):
       arg = re.split("\s+", arg, 1)
       if len(arg) > 1:
         arg, addr = arg
         output().info(self.cmd('@PJL RNVRAM ADDRESS=' + addr))
       else: self.help_nvram()
-    # write nvram
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # write nvram (single byte)
     elif arg.startswith('write'):
       arg = re.split("\s+", arg, 2)
       if len(arg) > 2:
@@ -362,7 +420,7 @@ class pjl(printer):
 
   def help_nvram(self):
     print("NVRAM operations:  nvram <operation>")
-    print("  nvram dump                 - Dump NVRAM to local file.")
+    print("  nvram dump [all]           - Dump (all) NVRAM to local file.")
     print("  nvram read addr            - Read single byte from address.")
     print("  nvram write addr value     - Write single byte to address.")
 
@@ -390,29 +448,23 @@ class pjl(printer):
   # ------------------------[ env ]-------------------------------------
   def do_env(self, arg):
     "Show environment variables (alias for 'info variables')."
-    self.do_info('variables', arg, True)
+    self.do_info('variables', arg)
 
-  # ------------------------[ serial ]----------------------------------
-  def do_serial(self, *arg):
-    "Show serial number (from 'info config')."
-    self.do_info('config', '.*SERIAL.*')
-
-  # ------------------------[ firmware ]--------------------------------
-  def do_firmware(self, *arg):
-    "Show firmware datecode/version (from 'info config')."
-    self.do_info('config', '.*FIRMWARE.*')
+  # ------------------------[ version ]---------------------------------
+  def do_version(self, *arg):
+    "Show firmware version or serial number (from 'info config')."
+    self.do_info('config', '.*(VERSION|FIRMWARE|SERIAL|NUMBER|MODEL).*')
 
   # ------------------------[ info <category> ]-------------------------
-  def do_info(self, arg, item="", options=False):
+  def do_info(self, arg, item='', echo=True):
     if arg in self.options_info:
       str_recv = self.cmd('@PJL INFO ' + arg.upper()).rstrip()
       if item:
-        if options:
-          match = re.findall("(" + item + "=.*(\n\t.*)*)", str_recv, re.I|re.M)
-          if match: match = match[0] # HACKHACKHACK
-        else: match = re.findall(item + "=(.*)", str_recv)
-        if match: output().info(match[0]) # return first item only
-        else: return c.NONEXISTENT
+        match = re.findall("(" + item + "=.*(\n\t.*)*)", str_recv, re.I|re.M)
+        if echo:
+          for m in match: output().info(m[0])
+          if not match: print("Not available.")
+        else: return match
       else:
         for line in str_recv.splitlines():
           if arg == 'id': line = line.strip('"')
@@ -438,7 +490,7 @@ class pjl(printer):
   def complete_info(self, text, line, begidx, endidx):
     return [cat for cat in self.options_info if cat.startswith(text)]
 
-  # ------------------------[ printenv <variable> ]--------------------------------
+  # ------------------------[ printenv <variable> ]---------------------
   def do_printenv(self, arg):
     "Show printer environment variable:  printenv <VAR>"
     str_recv = self.cmd('@PJL INFO VARIABLES')
@@ -448,9 +500,8 @@ class pjl(printer):
       if var:
         variables += var
       self.options_printenv = variables
-      match = re.findall("^(" + re.escape(arg) + ".*)\s?\[", item, re.I)
-      if match:
-        output().info(match[0])
+      match = re.findall("^(" + re.escape(arg) + ".*)\s+\[", item, re.I)
+      if match: output().info(match[0])
 
   options_printenv = []
   def complete_printenv(self, text, line, begidx, endidx):
@@ -532,7 +583,7 @@ class pjl(printer):
         self.chitchat("\rTrying PIN " + str(pin) + " (" + "%.2f" % (pin/655.35) + "%)", '')
       # send current chunk of PJL commands
       str_recv = self.cmd(str_send)
-      # seen hardcoded strings like ENABLED, ENABLE and ENALBED (sic!) in the wild
+      # seen hardcoded strings like 'ENABLED', 'ENABLE' and 'ENALBED' (sic!) in the wild
       if str_recv.startswith("ENA"):
         if len(keyspace) == 1:
           output().errmsg("Cannot unlock", "Bad PIN")

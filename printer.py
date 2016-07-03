@@ -22,6 +22,7 @@ class printer(cmd.Cmd, object):
   fuzz = False
   conn = None
   mode = None
+  iohack = True
   timeout = 10
   target = ""
   vol = ""
@@ -56,11 +57,10 @@ class printer(cmd.Cmd, object):
     self.fuzz = False
     if newtarget:
       self.set_vol()
-      self.set_cwd()
+      self.traversal = ""
       self.disable = False
       self.error = None
       self.files = {}
-      self.traversal = ""
     else:
       self.set_prompt()
 
@@ -71,7 +71,7 @@ class printer(cmd.Cmd, object):
   # show message for unknown commands
   def default(self, line):
     if line and line[0] != "#": # interpret as comment
-      self.chitchat("Unknown command: '" + line + "'")
+      output().chitchat("Unknown command: '" + line + "'")
 
   # suppress help message for undocumented commands
   def print_topics(self, header, cmds, cmdlen, maxcol):
@@ -232,7 +232,7 @@ class printer(cmd.Cmd, object):
   # ------------------------[ pwd ]-------------------------------------
   def do_pwd(self, arg):
     "Show working directory on remote device."
-    path = self.rpath()
+    path = ('' if self.vol else c.SEP) + self.rpath()
     output().raw(path)
 
   # ------------------------[ chvol <volume> ]--------------------------
@@ -254,6 +254,7 @@ class printer(cmd.Cmd, object):
       if self.mode == 'ps' : vol = c.PS_VOL
       if self.mode == 'pjl': vol = c.PJL_VOL
     self.vol = vol
+    self.set_cwd()
 
   # get volume
   def get_vol(self):
@@ -276,10 +277,9 @@ class printer(cmd.Cmd, object):
     self.traversal = traversal
 
   # ------------------------[ cd <path> ]-------------------------------
-
   def do_cd(self, arg):
     "Change remote working directory:  cd <path>"
-    if not arg or self.dir_exists(self.rpath(arg)):
+    if not self.cpath(arg) or self.dir_exists(self.rpath(arg)):
       if re.match("^[\." + c.SEP + "]+$", self.cpath(arg)):
         output().raw("*** Congratulations, path traversal found ***")
         output().chitchat("Consider setting 'traversal' instead of 'cd'.")
@@ -299,8 +299,11 @@ class printer(cmd.Cmd, object):
     self.prompt = target + c.SEP + cwd + "> "
 
   # get seperator
-  def get_sep(self, arg):
-    return c.SEP if (arg or self.cwd or self.traversal) else ''
+  def get_sep(self, path):
+    # don't add seperator between ps volume and filename
+    if self.mode == 'ps' and re.search("^%.*%$", path): return ''
+    # add seperator if we have to deal with a directory
+    return c.SEP if (path or self.cwd or self.traversal) else ''
 
   # --------------------------------------------------------------------
   # get path without volume and traversal information
@@ -322,7 +325,7 @@ class printer(cmd.Cmd, object):
   # get path with volume information
   def rpath(self, path=""):
     # warn if path contains volume information
-    if path.startswith("%") or path.startswith('0:'):
+    if (path.startswith("%") or path.startswith('0:')) and not self.fuzz:
       output().warning("Do not refer to disks directly, use chvol.")
     # in fuzzing mode leave remote path as it is
     if self.fuzz: return path
@@ -559,7 +562,7 @@ class printer(cmd.Cmd, object):
     output().hline()
     found = {} # pathes found
     # try base pathes first
-    for path in fuzzer().path:
+    for path in self.vol_exists() + fuzzer().path:
         self.verify_path(path, found)
     # try path traversal strategies
     if found:
@@ -587,7 +590,7 @@ class printer(cmd.Cmd, object):
     # test data to put/append
     data = "test"; data2 = "test2"
     # try write to disk strategies
-    for vol in fuzzer().write:
+    for vol in self.vol_exists() + fuzzer().write:
       sep = '' if vol[-1:] in ['', '/', '\\' ] else '/'
       name = "dat" + str(random.randrange(10000))
       # FSDOWNLOAD
@@ -611,7 +614,7 @@ class printer(cmd.Cmd, object):
       self.verify_blind(path, "")
     output().hline()
     # try blind file access strategies (absolute path)
-    for vol in fuzzer().blind:
+    for vol in self.vol_exists() + fuzzer().blind:
       sep  = '' if vol[-1:] in ['', '/', '\\' ] else '/'
       sep2 = vol[-1:] if vol[-1:] in ['/', '\\'] else '/'
       # filenames to look for
@@ -636,7 +639,7 @@ class printer(cmd.Cmd, object):
     # 1st method: EXISTS
     opt1 = (self.dir_exists(path) or False)
     # 2nd method: DIRLIST
-    dir2 = self.dirlist(path)
+    dir2 = self.dirlist(path, False)
     opt2 = (True if dir2 else False)
     # show fuzzing results
     output().fuzzed(path, "", ('', opt1, opt2))
@@ -656,7 +659,7 @@ class printer(cmd.Cmd, object):
     # 2nd method: EXISTS
     opt2 = (self.file_exists(path+name) != c.NONEXISTENT)
     # 3rd method: DIRLIST
-    opt3 = (name in self.dirlist(path))
+    opt3 = (name in self.dirlist(path, False))
     # show fuzzing results
     output().fuzzed(path+name, cmd, (opt1, opt2, opt3))
     return opt1

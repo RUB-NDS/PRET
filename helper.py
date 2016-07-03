@@ -3,7 +3,7 @@
 # python standard library
 from __future__ import print_function
 from socket import socket
-import sys, re, os, stat, time
+import sys, re, os, stat, time, math
 
 # third party modules
 from colorama import Fore, Back, Style
@@ -56,26 +56,23 @@ class log():
 class output():
   # show send commands (debug mode)
   def send(self, str, mode):
-    ### str = os.linesep.join(str.splitlines())
     if str: print(Back.CYAN + str + Style.RESET_ALL)
     if str and mode == 'hex':
-      if str: print(Fore.CYAN + ":".join("{:02x}".format(ord(c)) for c in str) + Style.RESET_ALL)
+      print(Fore.CYAN + ":".join("{:02x}".format(ord(c)) for c in str) + Style.RESET_ALL)
 
   # show recv commands (debug mode)
   def recv(self, str, mode):
-    ### str = os.linesep.join(str.splitlines())
     if str: print(Back.MAGENTA + str + Style.RESET_ALL)
     if str and mode == 'hex':
       print(Fore.MAGENTA + ":".join("{:02x}".format(ord(c)) for c in str) + Style.RESET_ALL)
 
   # show information
   def info(self, msg):
-    ### if str: print(":".join("{:02x}".format(ord(c)) for c in msg))
     if msg: print(Back.BLUE + msg + Style.RESET_ALL)
 
   # show raw data
   def raw(self, msg, eol=None):
-    if msg: print(Fore.YELLOW + msg + Style.RESET_ALL, end=eol) # TBD: CYAN
+    if msg: print(Fore.YELLOW + msg + Style.RESET_ALL, end=eol)
 
   # show chit-chat
   def chitchat(self, msg, eol=None):
@@ -92,32 +89,48 @@ class output():
 
   # show error message
   def errmsg(self, msg, info=""):
-    if msg: print(Back.RED + msg + Style.RESET_ALL + Style.DIM + " (" + info + ")" + Style.RESET_ALL)
+    if info: info = Style.RESET_ALL + Style.DIM + " (" + info + ")" + Style.RESET_ALL
+    if msg: print(Back.RED + msg + info)
+
+  # recursively list files
+  def psfind(self, name):
+    vol = Style.DIM + Fore.YELLOW + item(re.findall("^(%.*%)", name)) + Style.RESET_ALL
+    name = Fore.YELLOW + const.SEP + re.sub("^(%.*%)", '', name) + Style.RESET_ALL
+    print("%s %s" % (vol, name))
 
   # show directory listing
   def psdir(self, isdir, size, atime, name, mtime):
-    if isdir: print("d %8s   %s %s %s" % (size, atime, Style.DIM + "(last written: " + mtime + ")" + Style.RESET_ALL, Style.BRIGHT + Fore.BLUE + name + Style.RESET_ALL))
-    else:     print("- %8s   %s %s %s" % (size, atime, Style.DIM + "(last written: " + mtime + ")" + Style.RESET_ALL, name))
+    mtime = Style.DIM + "(last written: " + mtime + ")" + Style.RESET_ALL
+    vol = Style.DIM + Fore.YELLOW + item(re.findall("^(%.*%)", name)) + Style.RESET_ALL
+    name = re.sub("^(%.*%)", '', name) # remove volume information from filename
+    name = Style.BRIGHT + Fore.BLUE + name + Style.RESET_ALL if isdir else name
+    if isdir: print("d %8s   %s %s %s %s" % (size, atime, mtime, vol, name))
+    else:     print("- %8s   %s %s %s %s" % (size, atime, mtime, vol, name))
 
   # show directory listing
   def pjldir(self, name, size):
+    name = name if size else Style.BRIGHT + Fore.BLUE + name + Style.RESET_ALL
     if size: print("- %8s   %s" % (size, name))
-    else:    print("d %8s   %s" % ("-", Style.BRIGHT + Fore.BLUE + name + Style.RESET_ALL))
+    else:    print("d %8s   %s" % ("-", name))
 
   # show directory listing
   def pcldir(self, size, mtime, id, name):
-    print("- %8s   %s %s %s" % (size, mtime, Style.DIM + "(macro id: " + id + ")" + Style.RESET_ALL, name))
+    id = Style.DIM + "(macro id: " + id + ")" + Style.RESET_ALL
+    print("- %8s   %s %s %s" % (size, mtime, id, name))
 
   # show output from df
   def df(self, args):
-    self.info("%-18s %-11s %-11s %-9s %-10s %-8s %-9s %-10s %-10s" % args)
+    self.info("%-16s %-11s %-11s %-9s %-10s %-8s %-9s %-10s %-10s" % args)
 
   # show fuzzing results
   def fuzzed(self, path, cmd, opt):
       opt1, opt2, opt3 = opt
-      if isinstance(opt1, bool): opt1 = (Back.GREEN + str(opt1) + Back.BLUE + "   ") if opt1 else (Back.RED + str(opt1) + Back.BLUE + "  ")
-      if isinstance(opt2, bool): opt2 = (Back.GREEN + str(opt2) + Back.BLUE + "   ") if opt2 else (Back.RED + str(opt2) + Back.BLUE + "  ")
-      if isinstance(opt3, bool): opt3 = (Back.GREEN + str(opt3) + Back.BLUE + "   ") if opt3 else (Back.RED + str(opt3) + Back.BLUE + "  ")
+      if isinstance(opt1, bool): opt1 = (Back.GREEN + str(opt1) + Back.BLUE + "   ")\
+                                 if opt1 else (Back.RED + str(opt1) + Back.BLUE + "  ")
+      if isinstance(opt2, bool): opt2 = (Back.GREEN + str(opt2) + Back.BLUE + "   ")\
+                                 if opt2 else (Back.RED + str(opt2) + Back.BLUE + "  ")
+      if isinstance(opt3, bool): opt3 = (Back.GREEN + str(opt3) + Back.BLUE + "   ")\
+                                 if opt3 else (Back.RED + str(opt3) + Back.BLUE + "  ")
       opt = opt1, opt2, opt3
       self.info("%-35s %-12s %-7s %-7s %-7s" % ((path, cmd) + opt))
 
@@ -201,7 +214,7 @@ class conn(object):
     # send data to device
     if self._file: return os.write(self._file, data)
     # send data to socket
-    else: return self._sock.send(data)
+    elif self._sock: return self._sock.sendall(data)
 
   # receive data
   def recv(self, bytes):
@@ -213,36 +226,42 @@ class conn(object):
     if self.debug: output().recv(self.beautify(data), self.debug)
     return data
 
+  # so-many-seconds-passed bool condition
+  def past(self, seconds, watchdog):
+    return int(watchdog * 100) % (seconds * 100) == 0
+
+  # connection-feels-slow bool condition
+  def slow(self, limit, watchdog):
+    return not (self.quiet or self.debug) and watchdog > limit
+
   # receive data until a delimiter is reached
   def recv_until(self, delimiter, fb=True, crop=True, binary=False):
     data = ""
-    sleep = 0.01 # pause in loop
-    watchdog = 0.0 # watchdog timer
+    sleep = 0.01 # pause in recv loop
+    limit = 3.0 # max watchdog overrun
+    wd = 0.0 # watchdog timeout counter
     r = re.compile(delimiter, re.DOTALL)
     s = re.compile("^\x04?\x0d?\x0a?" + delimiter, re.DOTALL)
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     while not r.search(data):
-      # visual feedback on large/slow data transfers
-      if not (self.quiet or self.debug) and watchdog > 2.0:
-        if int(watchdog * 1000) % 100 == 0: # every 0.1 sec
-          output().chitchat(str(len(data)) + " bytes received\r", '')
       data += self.recv(4096) # receive actual data
-      if int(watchdog * 100) % 300 == 0: recv = len(data) # every 3 sec
-      watchdog += sleep # workaround for endless loops w/o socket timeout
-      time.sleep(sleep) # happens on some devices - python socket error!?
-      # watchdog timeout plus we are not receiving data anymore
-      if watchdog > self._sock.gettimeout() and len(data) == recv:
-        output().errmsg("Receiving data failed", "watchdog timeout")
-        return data
-      # clear current line from 'so-many bytes received' chit-chat
-      if not (self.quiet or self.debug) and watchdog > 2.0:
-        if int((watchdog - sleep) * 1000) % 100 == 0: # every 0.1 sec
-          output().chitchat(' ' * 24 + "\r", '')
+      if self.past(limit, wd): wd_old, bytes = wd, len(data)
+      wd += sleep       # workaround for endless loop w/o socket timeout
+      time.sleep(sleep) # happens on some devices - python socket error?
+      # timeout plus it seems we are not receiving data anymore
+      if wd > self._sock.gettimeout() and wd >= wd_old + limit:
+        if len(data) == bytes:
+          output().errmsg("Receiving data failed", "watchdog timeout")
+          break
+      # visual feedback on large/slow data transfers
+      if self.slow(limit, wd) and self.past(0.1, wd) and len(data) > 0:
+        output().chitchat(str(len(data)) + " bytes received\r", '')
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # clear current line from 'so-many bytes received' chit-chat
+    if self.slow(limit, wd): output().chitchat(' ' * 24 + "\r", '')
     # warn if feedback expected but response empty (= delimiter only)
     # this also happens for data received out of order (e.g. brother)
-    if fb and s.search(data):
-      output().chitchat("No data received.")
+    if fb and s.search(data): output().chitchat("No data received.")
     # remove delimiter itself from data
     if crop: data = r.sub('', data)
     # crop uel sequence at the beginning
@@ -266,7 +285,7 @@ class conn(object):
       if not binary: data = re.sub(r'\x0d?\x0a\x04?$', '', data)
     else: # pjl and pcl mode
       if binary: data = re.sub(r'\x0c$', '', data)
-      else: data = re.sub(r'\x0d+\x0a?\x0c\x04?$', '', data)
+      else: data = re.sub(r'\x0d+\x0a\x0c\x04?$', '', data)
     # crop whitespaces/newline as feedback
     if not binary: data = data.strip()
     return data
@@ -279,8 +298,10 @@ class conn(object):
     if self.mode == 'ps':
       # remove sent postscript header
       data = re.sub(r'' + re.escape(const.PS_HEADER), '', data)
+      # remove sent postscript hack
+      data = re.sub(r'' + re.escape(const.PS_IOHACK), '', data)
       # remove sent delimiter token
-      data = re.sub(r'\(\\nDELIMITER\d+\\n\) echo\n', '', data)
+      data = re.sub(r'\(DELIMITER\d+\\n\) print flush\n', '', data)
       # remove recv delimiter token
       data = re.sub(r'DELIMITER\d+', '', data)
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -316,14 +337,15 @@ class const(): # define constants
   PS_ERROR    = '%%\[ Error: (.*)\]%%'
   PS_FLUSH    = '%%\[ Flushing: (.*)\]%%'
   PS_PROMPT   = '>' # TBD: could be derived from PS command 'prompt'
-  PS_HEADER   = '@PJL ENTER LANGUAGE = POSTSCRIPT\n%!PS\n' \
-              + '/echo {(%stdout) (w) file dup 3 2 roll writestring flush} def\n' \
-              + '/dump {dup type /dicttype eq {{echo} forall} {==} ifelse} def\n'
+  PS_HEADER   = '@PJL ENTER LANGUAGE = POSTSCRIPT\n%!PS\n'
+  PS_IOHACK   = '/print {(%stdout) (w) file dup 3 2 roll writestring flushfile} def\n'\
+                '/== {128 string cvs print (\\n) print} def\n'
   PCL_HEADER  = '@PJL ENTER LANGUAGE = PCL' + EOL + ESC
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   SUPERBLOCK  = '31337' # define super macro id to contain pclfs table
   BLOCKRANGE  = range(10000,20000) # use those macros for file content
-  NONEXISTENT = -1 # file size to be returned if a file does not exist
+  FILE_EXISTS = -1 # file size to be returned if file/dir size unknown
+  NONEXISTENT = -2 # file size to be returned if a file does not exist
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  PS_VOL      = '' # no default volume in PostScript (aka: any volume)
+  PS_VOL      = '' # no default volume in ps (read: any, write: first)
   PJL_VOL     = '0:/' # default pjl volume name || unix path seperator

@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
 class fuzzer():
-  vol = ["", ".", "\\", "/", "0:\\", "0:/", "C:\\", "C:/", "file:///", "%disk0%", "%os%", "%*", "?", "??", "???"]
-  
+  vol = ["", ".", "\\", "/", "file:///", "C:/"]
   var = ["~", "$HOME"]
   win = ["%WINDIR%", "%SYSTEMROOT%", "%HOMEPATH%", "%PROGRAMFILES%"]
   smb = ["\\\\127.0.0.1\\"]
   web = ["http://127.0.0.1/"] # "http://thelorg.org/printers"
-  dir = ["..", "...", "...."] # note that right now we do not use any cominations like  "./.."
+  dir = ["..", "...", "...."] # also combinations like "./.."
 # sep = ["", "\\", "/", "\\\\", "//", "\\/"] 
-  abs = [".profile", ["etc", "passwd"], ["bin", "sh"], "boot.ini", ["windows", "win.ini"], ["windows", "cmd.exe"]]
+  abs = [".profile", ["etc", "passwd"], ["bin", "sh"], ["bin", "ls"],
+         "boot.ini", ["windows", "win.ini"], ["windows", "cmd.exe"]]
   rel = ["%WINDIR%\\win.ini",
          "%WINDIR%\\repair\\sam",
          "%WINDIR%\\repair\\system",
