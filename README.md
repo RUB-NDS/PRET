@@ -162,12 +162,23 @@ replace    Replace string in documents to be printed:  replace <old> <new>
 capture    Capture jobs to be printed on this device.
 hold       Enable job retention.
 
+set        Set key to value in topmost dictionary:  set <key=value>
 known      List supported PostScript operators:  known <operator>
 search     Search all dictionaries by key:  search <key>
 dicts      Return a list of dictionaries and their permissions.
+
 dump       Dump dictionary:  dump <dict>
-set        Set key to value in topmost dictionary:  set <key=value>
+  Dictionaries: - systemdict - statusdict - userdict 
+                - globaldict - serverdict - errordict
+                - internaldict - currentsystemparams
+                - currentuserparams - currentpagedevice
+
 config     Change printer settings:  config <setting>
+  duplex        - Set duplex printing.
+  copies #      - Set number of copies.
+  economode     - Set economic mode.
+  negative      - Set negative print.
+  mirror        - Set mirror inversion.
 ```
 
 ### Commands in PJL mode
