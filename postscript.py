@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 # python standard library
-import re, os, string, random, datetime
+import re, os, string, random, datetime, json, collections
 
 # local pret classes
 from printer import printer
-from helper import log, output, item, const as c
+from helper import log, output, file, item, const as c
 
 class postscript(printer):
   # --------------------------------------------------------------------
@@ -34,9 +34,11 @@ class postscript(printer):
 
   # handle error messages from PostScript interpreter
   def ps_err(self, str_recv):
+    self.error = None
     msg = item(re.findall(c.PS_ERROR, str_recv))
     if msg:
       output().errmsg("PostScript Error", msg)
+      self.error = msg
       str_recv = ""
     return str_recv
 
@@ -46,9 +48,9 @@ class postscript(printer):
       str_send = '<< /DoPrintErrors false >> setsystemparams '\
                + '(f1) = (f2) ==' # = original, == overwritten
       str_recv = self.cmd(str_send)
-      # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       # handle devices that do not support ps output via 'print' or '=='
-      if 'f1' in str_recv: self.iohack = False # all fine, no hack needed
+      if 'f1' in str_recv or self.error: self.iohack = False # all fine
       elif 'f2' in str_recv: # hack required to get output (e.g. Brother)
         output().errmsg('Crippled feedback', '%stdout hack enabled')
       else: # busy or not a PS printer or a silent one (e.g. Dell 3110cn)
@@ -100,8 +102,8 @@ class postscript(printer):
 
   # check if remote file exists
   def file_exists(self, path, ls=False):
-    str_recv = self.cmd('(' + path + ') status dup true ne '
-             + '{} {pop == == == ==} ifelse', False)
+    str_recv = self.cmd('(' + path + ') status dup '
+             + '{pop == == == ==} if', False)
     meta = str_recv.splitlines()
     # standard conform ps interpreters respond with file size + times
     if len(meta) == 4:
@@ -124,7 +126,7 @@ class postscript(printer):
     if r: path = self.rpath(path)
     path = self.escape(path + self.get_sep(path))
     # ------------------------------------------------------------------
-    timeout, timeout_old = self.timeout * 10, self.timeout
+    timeout, timeout_old = self.timeout * 2, self.timeout
     self.do_timeout(timeout, True) # workaround: dynamic timeout
     if not self.fuzz: self.chitchat("Retrieving file list. "
     + "Temporarily increasing timeout to " + str(int(timeout)) + ".")
@@ -239,13 +241,6 @@ class postscript(printer):
 
   # ====================================================================
 
-  # ------------------------[ reset ]-----------------------------------
-  def do_reset(self, arg):
-    "Reset PostScript parameters to factory defaults."
-    self.cmd('<< /FactoryDefaults true >> setsystemparams', False)
-
-  # ====================================================================
-
   # ------------------------[ id ]--------------------------------------
   def do_id(self, *arg):
     "Show device information."
@@ -270,7 +265,7 @@ class postscript(printer):
     output().df(('VOLUME', 'TOTAL SIZE', 'FREE SPACE', 'PRIORITY',
     'REMOVABLE', 'MOUNTED', 'HASNAMES', 'WRITEABLE', 'SEARCHABLE'))
     for vol in self.vol_exists():
-      str_send = '(' + vol + ') devstatus dup true eq {pop ' + '== ' * 8 + '} if'
+      str_send = '(' + vol + ') devstatus dup {pop ' + '== ' * 8 + '} if'
       lst_recv = self.cmd(str_send).splitlines()
       values = (vol,) + tuple(lst_recv if len(lst_recv) == 8 else ['-'] * 8)
       output().df(values)
@@ -287,13 +282,13 @@ class postscript(printer):
       output().info("%-14s %s%s%-14s %-10s" % msg)
     except:
       output().info("Not available")
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     output().raw("Virtual memory")
     output().info(self.cmd('vmstatus\n'
                          + '(level:  ) print vmstatus == pop\n'
                          + '(used:   ) print == pop\n'
                          + '(max:    ) print == pop'))
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     output().raw("Font cache")
     output().info(self.cmd('cachestatus '
                          + '(bsize:  ) print cachestatus == pop\n'
@@ -303,7 +298,7 @@ class postscript(printer):
                          + '(csize:  ) print == pop\n'
                          + '(cmax:   ) print == pop\n'
                          + '(blimit: ) print == pop'))
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     output().raw("User cache")
     output().info(self.cmd('ucachestatus '
                          + '(bsize:  ) print ucachestatus == pop\n'
@@ -328,48 +323,14 @@ class postscript(printer):
     try: output().info(str(datetime.timedelta(seconds=int(str_recv) / 1000)))
     except ValueError: output().info("Not available")
 
-  # ------------------------[ format ]----------------------------------
-  def do_format(self, arg):
-    "Initialize printer's file system:  format <disk>"
-    if not self.vol:
-      output().info("Set volume first using 'chvol'")
-    else:
-      output().warning("Warning: Initializing the printer's file system will whipe-out all")
-      output().warning("user data (e.g. stored jobs) on the volume. Press CTRL+C to abort.")
-      if output().countdown("Initializing " + self.vol + " in...", 10, self):
-        str_recv = self.cmd('statusdict begin (' + self.vol + ') () initializedisk end', False)
-
-  # ------------------------[ known <operator> ]-------------------------
-  def do_known(self, arg):
-    "List supported PostScript operators:  known <operator>"
-    if arg:
-      functionlist = {'User-supplied Operators': arg.split()}
-    else:
-      functionlist = {
-        '01. Operand Stack Manipulation Operators': ['pop', 'exch', 'dup', 'copy', 'index', 'roll', 'clear', 'count', 'mark', 'cleartomark', 'counttomark'],
-        '02. Arithmetic and Math Operators': ['add', 'div', 'idiv', 'mod', 'mul', 'sub', 'abs', 'neg', 'ceiling', 'floor', 'round', 'truncate', 'sqrt', 'atan', 'cos', 'sin', 'exp', 'ln', 'log', 'rand', 'srand', 'rrand'],
-        '03. Array Operators': ['array', 'length', 'get', 'put', 'getinterval', 'putinterval', 'astore', 'aload', 'forall'],
-        '04. Packed Array Operators': ['packedarray', 'setpacking', 'currentpacking'],
-        '05. Dictionary Operators': ['dict ', 'maxlength', 'begin', 'end', 'def', 'load', 'store', 'undef', 'known', 'where', 'currentdict', 'errordict', '$error', 'systemdict', 'userdict', 'globaldict', 'statusdict', 'countdictstack', 'dictstack', 'cleardictstack'],
-        '06. String Operators': ['string', 'anchorsearch', 'search'],
-        '07. Relational, Boolean, and Bitwise Operators': ['eq', 'ne', 'ge', 'gt', 'le', 'lt', 'and', 'or', 'xor', 'true', 'false', 'bitshift'],
-        '08. Control Operators': ['exec', 'if', 'ifelse', 'for', 'repeat', 'loop', 'exit', 'stop', 'stopped', 'countexecstack', 'execstack', 'quit', 'start'],
-        '09. Type, Attribute, and Conversion Operators': ['type', 'cvlit', 'cvx', 'xcheck', 'executeonly', 'noaccess', 'readonly', 'rcheck', 'wcheck', 'cvi', 'cvn', 'cvr', 'cvrs', 'cvs'],
-        '10. File Operators': ['file', 'filter', 'closefile', 'read', 'write', 'readhexstring', 'writehexstring', 'readstring', 'writestring', 'readline', 'token', 'bytesavailable', 'flush', 'flushfile', 'resetfile', 'status', 'run', 'currentfile', 'deletefile', 'renamefile', 'filenameforall', 'setfileposition', 'fileposition', 'print', '=', '==', 'stack', 'pstack', 'printobject', 'writeobject', 'setobjectformat', 'currentobjectformat'],
-        '11. Resource Operators': ['defineresource', 'undefineresource', 'findresource', 'findcolorrendering', 'resourcestatus', 'resourceforall'],
-        '12. Virtual Memory Operators': ['save', 'restore', 'setglobal', 'currentglobal', 'gcheck', 'startjob', 'defineuserobject', 'execuserobject', 'undefineuserobject', 'UserObjects'],
-        '13. Miscellaneous Operators': ['bind', 'null', 'version', 'realtime', 'usertime', 'languagelevel', 'product', 'revision', 'serialnumber', 'executive', 'echo', 'prompt'],
-        '14. Device Setup and Output Operators': ['showpage', 'copypage', 'setpagedevice', 'currentpagedevice', 'nulldevice'],
-        '15. Errors' : ['configurationerror', 'dictfull', 'dictstackoverflow', 'dictstackunderflow', 'execstackoverflow', 'handleerror', 'interrupt', 'invalidaccess', 'invalidexit', 'invalidfileaccess', 'invalidfont', 'invalidrestore', 'ioerror', 'limitcheck', 'nocurrentpoint', 'rangecheck', 'stackoverflow', 'stackunderflow', 'syntaxerror', 'timeout', 'typecheck', 'undefined', 'undefinedfilename', 'undefinedresource', 'undefinedresult', 'unmatchedmark', 'unregistered', 'VMerror'],
-        '16. Proprietary Operators' : []} # TBD: get from firmare, ps.vm or via systemdict (or proprietary dict name) dumper
-    # ask interpreter if functions are known
-    for desc, funcs in sorted(functionlist.iteritems()):
-      output().chitchat(desc)
-      commands = ['(' + func  + ': ) print systemdict /'
-               + func + ' known ==' for func in funcs]
-      str_recv = self.cmd(c.EOL.join(commands), False)
-      for line in str_recv.splitlines():
-        output().green(line) if " true" in line else output().warning(line)
+  # ------------------------[ date ]------------------------------------
+  def do_date(self, arg):
+    "Show printer's system date and time."
+    str_send = '(%Calendar%) /IODevice resourcestatus\n'\
+               '{(%Calendar%) currentdevparams /DateTime get print}\n'\
+               '{(Not available) print} ifelse'
+    str_recv = self.cmd(str_send)
+    output().info(str_recv)
 
   # ====================================================================
 
@@ -411,3 +372,447 @@ class postscript(printer):
              '/SystemParamsPassword () ' # mostly harmless settings
              '/StartJobPassword () '     # administration functions
              '>> setsystemparams', False)
+
+  # ------------------------[ restart ]---------------------------------
+  def do_restart(self, arg):
+    "Restart PostScript interpreter."
+    output().chitchat("Restarting PostScript interpreter.")
+    # reset VM, might delete downloaded files and/or restart printer
+    self.cmd('serverdict begin 0 exitserver systemdict /quit get exec')
+
+  # ------------------------[ reset ]-----------------------------------
+  def do_reset(self, arg):
+    "Reset PostScript settings to factory defaults."
+    # reset system parameters -- only works if printer is turned off
+    ''' »A flag that, if set to true immediately before the printer is turned
+    off, causes all nonvolatile parameters to revert to their factory default
+    values at the next power-on. The set of nonvolatile parameters is product
+    dependent. In most products, 'PageCount' cannot be reset. If the job that
+    sets FactoryDefaults to true is not the last job executed straight before
+    power-off, the request is ignored; this reduces the chance that malicious
+    jobs will attempt to perform this operation.« '''
+    self.cmd('<< /FactoryDefaults true >> setsystemparams')
+    output().raw("Printer must be turned off immediately for changes to take effect.")
+
+  # ------------------------[ format ]----------------------------------
+  def do_format(self, arg):
+    "Initialize printer's file system:  format <disk>"
+    if not self.vol:
+      output().info("Set volume first using 'chvol'")
+    else:
+      output().warning("Warning: Initializing the printer's file system will whipe-out all")
+      output().warning("user data (e.g. stored jobs) on the volume. Press CTRL+C to abort.")
+      if output().countdown("Initializing " + self.vol + " in...", 10, self):
+        str_recv = self.cmd('statusdict begin (' + self.vol + ') () initializedisk end', False)
+
+  # ------------------------[ disable ]---------------------------------
+  def do_disable(self, arg):
+    "Disable printing functionality."
+    self.disable = not self.disable
+    str_disable = "Disabling" if self.disable else "Enabling"
+    str_send = 'serverdict begin 0 exitserver\n'
+    str_send += '/showpage {} def' if self.disable\
+                else "currentdict /showpage undef"
+    output().chitchat(str_disable + " printing functionality")
+    self.cmd(str_send)
+
+  # ====================================================================
+
+  # ------------------------[ overlay <file.eps> ]----------------------
+  def do_overlay(self, arg):
+    "Put overlay eps file on all hardcopies:  overlay <file.eps>"
+    if not arg:
+      arg = raw_input('File: ')
+    data = file().read(arg)
+    if data: self.overlay(data)
+
+  # define alias
+  complete_overlay = printer.complete_lfiles # files or directories
+
+  def overlay(self, data):
+    str_send = 'serverdict begin 0 exitserver\n'\
+               'currentdict /showpage_real known false eq\n'\
+               '{/showpage_real systemdict /showpage get def} if\n'\
+               '/showpage {save /showpage {} bind def\n'\
+               + data + '\nrestore showpage_real} def'
+    self.cmd(str_send)
+
+  # ------------------------[ cross <text> <font> ]---------------------
+  def do_cross(self, arg):
+    arg = re.split("\s+", arg, 1)
+    if len(arg) > 1 and arg[0] in self.options_cross:
+      font, text = arg
+      text = text.strip('"')
+      data = file().read(self.fontdir + font + ".pfa") or ""
+      data += '\n/' + font + ' findfont 50 scalefont setfont\n'\
+              '80 185 translate 52.6 rotate 1.1 1 scale 275 -67 moveto\n'\
+              '(' + text  + ') dup stringwidth pop 2 div neg 0 rmoveto show'
+      self.overlay(data)
+    else:
+      self.onecmd("help cross")
+
+  def help_cross(self):
+    print("Put printer graffiti on all hardcopies:  cross <font> <text>")
+    print("Read the docs on how to install custom fonts. Available fonts:")
+    for font in sorted(self.options_cross): print("• " + font)
+
+  fontdir = os.path.dirname(os.path.realpath(__file__))\
+          + os.path.sep + 'fonts' + os.path.sep
+  options_cross = [os.path.splitext(font)[0] for font in (os.listdir(fontdir)
+                  if os.path.exists(fontdir) else []) if font.endswith('.pfa')]
+
+  def complete_cross(self, text, line, begidx, endidx):
+    return [cat for cat in self.options_cross if cat.startswith(text)]
+
+  # ------------------------[ replace <old> <new> ]---------------------
+  def do_replace(self, arg):
+    "Replace string in documents to be printed:  replace <old> <new>"
+    arg = re.split("\s+", arg, 1)
+    if len(arg) > 1:
+      oldstr, newstr = self.escape(arg[0]), self.escape(arg[1])
+      self.cmd('serverdict begin 0 exitserver\n'
+               '/strcat {exch dup length 2 index length add string dup\n'
+               'dup 4 2 roll copy length 4 -1 roll putinterval} def\n'
+               '/replace {exch pop (' + newstr + ') exch 3 1 roll exch strcat strcat} def\n'
+               '/findall {{(' + oldstr + ') search {replace}{exit} ifelse} loop} def\n'
+               '/show       {      findall       systemdict /show       get exec} def\n'
+               '/ashow      {      findall       systemdict /ashow      get exec} def\n'
+               '/widthshow  {      findall       systemdict /widthshow  get exec} def\n'
+               '/awidthshow {      findall       systemdict /awidthshow get exec} def\n'
+               '/cshow      {      findall       systemdict /cshow      get exec} def\n'
+               '/kshow      {      findall       systemdict /kshow      get exec} def\n'
+               '/xshow      { exch findall exch  systemdict /xshow      get exec} def\n'
+               '/xyshow     { exch findall exch  systemdict /xyshow     get exec} def\n'
+               '/yshow      { exch findall exch  systemdict /yshow      get exec} def\n')
+    else:
+      self.onecmd("help replace")
+
+  # ------------------------[ capture ]---------------------------------
+  def do_capture(self, arg):
+    "Capture jobs to be printed on this device."
+    hook = 'currentfile' # must be first operator in documents to be printed
+    data = '  false echo % turn echo off as it slows down interpreters\n'\
+           '  /strcat {exch dup length 2 index length add string dup\n'\
+           '  dup 4 2 roll copy length 4 -1 roll putinterval} def\n'\
+           '  /rndname [(job_) rand 16 string cvs strcat (.ps) strcat] def\n'\
+           '  /capture {dup rndname 0 get (a+) file dup 3 2 roll writestring} def\n'\
+           '  /execute {cvx exec} def\n'\
+           '  {\n'\
+           '    currentdict (firstrun) known not\n'\
+           '    {(%!\\n' + hook + ' ) capture execute /firstrun 0 def} if\n'\
+           '    (%lineedit) (r) file dup\n'\
+           '    bytesavailable string readstring pop capture execute\n'\
+           '  } loop'
+    # hook our code into very first postscript operator
+    self.cmd('serverdict begin 0 exitserver\n'
+             '/' + hook + ' {\n'+ data + '\n} def')
+    self.chitchat("Future print jobs will be captured on file system.")
+
+  # ------------------------[ hold ]------------------------------------
+  def do_hold(self, arg):
+    "Enable job retention."
+    self.cmd('<< /Collate true /CollateDetails '
+             '<< /Mode 0 /Type 8 /Hold 2 >> >> setpagedevice')
+    self.chitchat("Job retention enabled.")
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    '''
+    **************************** HP/KYOCERA ****************************
+    << /Collate true /CollateDetails <<         /Type 8 /Hold 1 >> >> setpagedevice  % quick copy (HP)
+    << /Collate true /CollateDetails <<         /Type 8 /Hold 2 >> >> setpagedevice  % stored job (HP)
+    << /Collate true /CollateDetails << /Mode 0 /Type 8 /Hold 1 >> >> setpagedevice  % quick copy (Kyocera)
+    << /Collate true /CollateDetails << /Mode 0 /Type 8 /Hold 2 >> >> setpagedevice  % stored job (Kyocera)
+    << /Collate true /CollateDetails << /Mode 0                 >> >> setpagedevice  % permanent job storage (Kyocera)
+    <<               /CollateDetails << /Hold 0 /Type 8         >> >> setpagedevice  % disable job retention (HP)
+
+    **************************** CANON *********************************
+    << /CNJobExecMode store >> setpagedevice
+    << /CNJobExecMode hold  >> setpagedevice
+
+    **************************** XEROX #1 ******************************
+    userdict /XJXsetraster known { 1 XJXsetraster } if
+
+    **************************** XEROX #2 ******************************
+    userdict begin /xerox$holdjob 1 def end
+    /EngExe /ProcSet resourcestatus
+    {pop pop /EngExe /ProcSet findresource /HoldJob known
+    {false /EngExe /ProcSet findresource /HoldJob get exec} if} if
+
+    **************************** TOSHIBA *******************************
+    /dscInfo where {
+      pop
+      dscInfo /For known {
+        <</TSBPrivate 100 string dup 0 (DSSC PRINT USERLOGIN=)
+          putinterval dup 21 dscInfo /For get putinterval
+        >> setpagedevice
+      } if
+      dscInfo /Title known {
+        <</TSBPrivate 100 string dup 0 (DSSC JOB NAME=)
+          putinterval dup 14 dscInfo /Title get putinterval
+        >> setpagedevice
+      } if
+    << /TSBPrivate (DSSC PRINT PRINTMODE=HOLD) >> setpagedevice
+    }{
+      << /TSBPrivate (DSSC PRINT USERLOGIN=CUPS User) >> setpagedevice
+      << /TSBPrivate (DSSC JOB NAME=CUPS Document)    >> setpagedevice
+      << /TSBPrivate (DSSC PRINT PRINTMODE=HOLD)      >> setpagedevice
+    } ifelse"
+  '''
+
+  # ====================================================================
+
+  # ------------------------[ known <operator> ]-------------------------
+  def do_known(self, arg):
+    "List supported PostScript operators:  known <operator>"
+    if arg:
+      functionlist = {'User-supplied Operators': arg.split()}
+    else:
+      functionlist = {
+        '01. Operand Stack Manipulation Operators': ['pop', 'exch', 'dup', 'copy', 'index', 'roll', 'clear', 'count', 'mark', 'cleartomark', 'counttomark'],
+        '02. Arithmetic and Math Operators': ['add', 'div', 'idiv', 'mod', 'mul', 'sub', 'abs', 'neg', 'ceiling', 'floor', 'round', 'truncate', 'sqrt', 'atan', 'cos', 'sin', 'exp', 'ln', 'log', 'rand', 'srand', 'rrand'],
+        '03. Array Operators': ['array', 'length', 'get', 'put', 'getinterval', 'putinterval', 'astore', 'aload', 'forall'],
+        '04. Packed Array Operators': ['packedarray', 'setpacking', 'currentpacking'],
+        '05. Dictionary Operators': ['dict ', 'maxlength', 'begin', 'end', 'def', 'load', 'store', 'undef', 'known', 'where', 'currentdict', 'errordict', '$error', 'systemdict', 'userdict', 'globaldict', 'statusdict', 'countdictstack', 'dictstack', 'cleardictstack'],
+        '06. String Operators': ['string', 'anchorsearch', 'search'],
+        '07. Relational, Boolean, and Bitwise Operators': ['eq', 'ne', 'ge', 'gt', 'le', 'lt', 'and', 'or', 'xor', 'true', 'false', 'bitshift'],
+        '08. Control Operators': ['exec', 'if', 'ifelse', 'for', 'repeat', 'loop', 'exit', 'stop', 'stopped', 'countexecstack', 'execstack', 'quit', 'start'],
+        '09. Type, Attribute, and Conversion Operators': ['type', 'cvlit', 'cvx', 'xcheck', 'executeonly', 'noaccess', 'readonly', 'rcheck', 'wcheck', 'cvi', 'cvn', 'cvr', 'cvrs', 'cvs'],
+        '10. File Operators': ['file', 'filter', 'closefile', 'read', 'write', 'readhexstring', 'writehexstring', 'readstring', 'writestring', 'readline', 'token', 'bytesavailable', 'flush', 'flushfile', 'resetfile', 'status', 'run', 'currentfile', 'deletefile', 'renamefile', 'filenameforall', 'setfileposition', 'fileposition', 'print', '=', '==', 'stack', 'pstack', 'printobject', 'writeobject', 'setobjectformat', 'currentobjectformat'],
+        '11. Resource Operators': ['defineresource', 'undefineresource', 'findresource', 'findcolorrendering', 'resourcestatus', 'resourceforall'],
+        '12. Virtual Memory Operators': ['save', 'restore', 'setglobal', 'currentglobal', 'gcheck', 'startjob', 'defineuserobject', 'execuserobject', 'undefineuserobject'],
+        '13. Miscellaneous Operators': ['bind', 'null', 'version', 'realtime', 'usertime', 'languagelevel', 'product', 'revision', 'serialnumber', 'executive', 'echo', 'prompt'],
+        '14. Device Setup and Output Operators': ['showpage', 'copypage', 'setpagedevice', 'currentpagedevice', 'nulldevice'],
+        '15. Errors' : ['handleerror'],
+        '16. Proprietary Operators' : []} # TBD: get from firmare, ps.vm or via systemdict (or proprietary dict name) dumper
+    # ask interpreter if functions are known to systemdict
+    for desc, funcs in sorted(functionlist.iteritems()):
+      output().chitchat(desc)
+      commands = ['(' + func  + ': ) print systemdict /'
+               + func + ' known ==' for func in funcs]
+      str_recv = self.cmd(c.EOL.join(commands), False)
+      for line in str_recv.splitlines():
+        output().green(line) if " true" in line else output().warning(line)
+
+  # ------------------------[ search <key> ]----------------------------
+  def do_search(self, arg):
+    "Search all dictionaries by key:  search <key>"
+    output().info(self.cmd('(' + arg + ') where {(' + arg + ') get ==} if'))
+
+  # ------------------------[ dicts ]-----------------------------------
+  def do_dicts(self, arg):
+    "Return a list of dictionaries and their permissions."
+    output().info("acl   len   max   dictionary")
+    output().info("────────────────────────────")
+    for dict in self.options_dump:
+      str_recv = self.cmd('1183615869 ' + dict + '\n'
+                          'dup rcheck {(r) print}{(-) print} ifelse\n'
+                          'dup wcheck {(w) print}{(-) print} ifelse\n'
+                          'dup xcheck {(x) print}{(-) print} ifelse\n'
+                          '( ) print dup length 65500 string cvs print\n'
+                          '( ) print maxlength  65500 string cvs print')
+      if str_recv:
+        output().info("%-5s %-5s %-5s %s" % tuple(str_recv.split() + [dict]))
+
+  # ------------------------[ dump <dict> ]-----------------------------
+  def do_dump(self, arg):
+    "Dump all values of a dictionary:  dump <dict>"
+    dump = self.dictdump(arg)
+    if dump: output().psdict(dump)
+
+  def help_dump(self):
+    print("Dump dictionary:  dump <dict>")
+    print("If <dict> is empty, the whole dictionary stack is dumped.")
+    print("Standard PostScript dictionaries:")
+    for dict in self.options_dump: print("• " + dict)
+
+  # undocumented ... what about proprietary dictionary names?
+  options_dump = ('systemdict', 'statusdict', 'userdict', 'globaldict',
+        'serverdict', 'errordict', 'internaldict', 'currentpagedevice',
+        'currentuserparams', 'currentsystemparams')
+
+  def complete_dump(self, text, line, begidx, endidx):
+    return [cat for cat in self.options_dump if cat.startswith(text)]
+
+  # define alias
+  complete_browse = complete_dump
+
+  def dictdump(self, dict):
+    if not dict: # dump whole dictstack if optional dict parameter is empty
+      dict = 'superdict'
+      self.chitchat("No dictionary given - dumping everything (might take some time)")
+    # recursively dump contents of a postscript dictionary and convert them to json
+    str_send = '/superdict {<< (universe) countdictstack array dictstack >>} def\n' \
+               '/strcat {exch dup length 2 index length add string dup\n'           \
+               'dup 4 2 roll copy length 4 -1 roll putinterval} def\n'              \
+               '/remove {exch pop () exch 3 1 roll exch strcat strcat} def\n'       \
+               '/escape { {(")   search {remove}{exit} ifelse} loop \n'             \
+               '          {(/)   search {remove}{exit} ifelse} loop \n'             \
+               '          {(\\\) search {remove}{exit} ifelse} loop } def\n'        \
+               '/clones 220 array def /counter 0 def % performance drawback\n'      \
+               '/redundancy { /redundant false def\n'                               \
+               '  clones {exch dup 3 1 roll eq {/redundant true def} if} forall\n'  \
+               '  redundant not {\n'                                                \
+               '  dup clones counter 3 2 roll put  % put item into clonedict\n'     \
+               '  /counter counter 1 add def       % auto-increment counter\n'      \
+               '  } if redundant} def              % return true or false\n'        \
+               '/wd {redundancy {pop q (<redundant dict>) p q bc s}\n'              \
+               '{bo n {t exch q 128 a q c dump n} forall bc bc s} ifelse } def\n'   \
+               '/wa {q q bc s} def\n'                                               \
+               '% /wa {ao n {t dump n} forall ac bc s} def\n'                       \
+               '/n  {(\\n) print} def               % newline\n'                    \
+               '/t  {(\\t) print} def               % tabulator\n'                  \
+               '/bo {({)   print} def              % bracket open\n'                \
+               '/bc {(})   print} def              % bracket close\n'               \
+               '/ao {([)   print} def              % array open\n'                  \
+               '/ac {(])   print} def              % array close\n'                 \
+               '/q  {(")   print} def              % quote\n'                       \
+               '/s  {(,)   print} def              % comma\n'                       \
+               '/c  {(: )  print} def              % colon\n'                       \
+               '/p  {                  print} def  % print string\n'                \
+               '/a  {string cvs        print} def  % print any\n'                   \
+               '/pe {escape            print} def  % print escaped string\n'        \
+               '/ae {string cvs escape print} def  % print escaped any\n'           \
+               '/perms { readable  {(r) p}{(-) p} ifelse\n'                         \
+               '         writeable {(w) p}{(-) p} ifelse } def\n'                   \
+               '/rwcheck { % readable/writeable check\n'                            \
+               '  dup rcheck not {/readable  false def} if\n'                       \
+               '  dup wcheck not {/writeable false def} if perms } def\n'           \
+               '/dump {\n'                                                          \
+               '  /readable true def /writeable true def\n'                         \
+               '  dup type bo ("type": ) p q 16 a q s\n'                            \
+               '  %%%% check permissions %%%\n'                                     \
+               '  ( "perms": ) p q\n'                                               \
+               '  dup type /stringtype eq {rwcheck} {\n'                            \
+               '    dup type /dicttype eq {rwcheck} {\n'                            \
+               '      dup type /arraytype eq {rwcheck} {\n'                         \
+               '        dup type /packedarraytype eq {rwcheck} {\n'                 \
+               '          dup type /filetype eq {rwcheck} {\n'                      \
+               '            perms } % inherit perms from parent\n'                  \
+               '          ifelse} ifelse} ifelse} ifelse} ifelse\n'                 \
+               '  dup xcheck {(x) p}{(-) p} ifelse\n'                               \
+               '  %%%% convert values to strings %%%\n'                             \
+               '  q s ( "value": ) p\n'                                             \
+               '  %%%% on invalidaccess %%%\n'                                      \
+               '  readable false eq {pop q (<access denied>) p q bc s}{\n'          \
+               '  dup type /integertype     eq {q  12        a q bc s}{\n'          \
+               '  dup type /operatortype    eq {q 128       ae q bc s}{\n'          \
+               '  dup type /stringtype      eq {q           pe q bc s}{\n'          \
+               '  dup type /booleantype     eq {q   5        a q bc s}{\n'          \
+               '  dup type /dicttype        eq {            wd       }{\n'          \
+               '  dup type /arraytype       eq {            wa       }{\n'          \
+               '  dup type /packedarraytype eq {            wa       }{\n'          \
+               '  dup type /nametype        eq {q 128       ae q bc s}{\n'          \
+               '  dup type /fonttype        eq {q  30       ae q bc s}{\n'          \
+               '  dup type /nulltype        eq {q pop (null) p q bc s}{\n'          \
+               '  dup type /realtype        eq {q  42        a q bc s}{\n'          \
+               '  dup type /filetype        eq {q 100       ae q bc s}{\n'          \
+               '  dup type /marktype        eq {q 128       ae q bc s}{\n'          \
+               '  dup type /savetype        eq {q 128       ae q bc s}{\n'          \
+               '  dup type /gstatetype      eq {q 128       ae q bc s}{\n'          \
+               '  (<cannot handle>) p}\n'                                           \
+               '  ifelse} ifelse} ifelse} ifelse} ifelse} ifelse} ifelse} ifelse}\n'\
+               '  ifelse} ifelse} ifelse} ifelse} ifelse} ifelse} ifelse} ifelse}\n'\
+               'def\n'
+    str_send += '(' + dict + ') where {bo 1183615869 ' + dict + ' {exch q 128 a q c dump n}'\
+                ' forall bc}{(<nonexistent>) print} ifelse'
+    str_recv = self.cmd(str_send)
+    str_recv = self.clean_json(str_recv)
+    if str_recv == '<nonexistent>':
+      output().info("Dictionary not found")
+    else: # convert ps dictionary to json
+      return json.loads(str_recv, object_pairs_hook=collections.OrderedDict, strict=False)
+
+  # bad practice
+  def clean_json(self, string):
+    string = re.sub(",[ \t\r\n]+}", "}", string)
+    string = re.sub(",[ \t\r\n]+\]", "]", string)
+    return string
+
+  def do_statusdict(self, arg):
+    output().info(self.cmd('statusdict {exch == == (\\n) print } forall'))
+
+  # ====================================================================
+
+  '''
+  load | site /systemdict load pstack
+    key load 
+    value 
+    searches dict stack for key and returns value
+
+  where | site /== where pstack
+    key where 
+    dict true OR false 
+    finds dict in which key is defined
+
+  get | site systemdict /== get pstack
+    dict key get 
+    any 
+    returns value in dict associated to key
+
+  known | site systemdict /== known pstack
+    dict key known 
+    bool 
+    tests whether key is in dict
+
+  length
+    dict length 
+    int 
+    returns number of key-value pairs in the dictionary
+
+  maxlength
+    dict maxlength 
+    int 
+    capactity of dict
+  '''
+
+  # ------------------------[ set <key=value> ]-------------------------
+  def do_set(self, arg):
+    "Set key to value in topmost dictionary:  set <key=value>"
+    arg = re.split("=", arg, 1)
+    if len(arg) > 1:
+      key, val = arg
+      # make changes permanent
+      str_send = 'serverdict begin 0 exitserver {\n'
+      # flavor No.1: put (associate key with value in dict)
+      str_send += '/' + key + ' where {/' + key + ' ' + val + ' put} if\n'
+      # flavor No.2: store (replace topmost definition of key)
+      str_send += '/' + key + ' ' + val + ' store\n'
+      # flavor No.3: def (associate key and value in userdict)
+      str_send += '/' + key + ' ' + val + ' def\n'
+      # ignore invalid access
+      str_send += '} 1183615869 internaldict /superexec get exec'
+      self.cmd(str_send, False)
+    else:
+      self.onecmd("help set")
+
+  # ------------------------[ config <setting> ]------------------------
+  def do_config(self, arg):
+    arg = re.split("\s+", arg, 1)
+    (arg, val) = tuple(arg) if len(arg) > 1 else (arg[0], None)
+    if arg in self.options_config.keys():
+      key = self.options_config[arg]
+      if arg == 'copies' and not val: return self.help_config()
+      val = val or 'currentpagedevice (' + key + ') get not'
+      output().info(self.cmd('serverdict begin 0 exitserver\n'
+        '<< /' + key + ' ' + val + ' >> setpagedevice\n'
+        '(' + key + ' ) print currentpagedevice (' + key + ') get\n'
+        'dup type /integertype eq {(= ) print 8 string cvs print}\n'
+        '{{(enabled)}{(disabled)} ifelse print} ifelse'))
+    else:
+      self.help_config()
+
+  def help_config(self):
+    print("Change printer settings:  config <setting>")
+    print("  duplex        - Set duplex printing.")
+    print("  copies #      - Set number of copies.")
+    print("  economode     - Set economic mode.")
+    print("  negative      - Set negative print.")
+    print("  mirror        - Set mirror inversion.")
+
+  options_config = {'duplex'   : 'Duplex',
+                    'copies'   : 'NumCopies',
+                    'economode': 'EconoMode',
+                    'negative' : 'NegativePrint',
+                    'mirror'   : 'MirrorPrint'}
+
+  def complete_config(self, text, line, begidx, endidx):
+    return [cat for cat in self.options_config if cat.startswith(text)]

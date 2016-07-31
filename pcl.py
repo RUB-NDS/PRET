@@ -24,7 +24,7 @@ class pcl(printer):
       # use random token as delimiter for PCL responses
       str_recv = self.conn.recv_until('ECHO ' + token + '.*$', fb)
       # crop all PCL lines from received buffer
-      str_recv = re.sub(r"\x0d?\x0a?\x0c?PCL.*\x0a", '', str_recv)
+      str_recv = re.sub(r"\x0d?\x0a?\x0c?PCL.*\x0a?", '', str_recv)
       return str_recv
 
     # handle CTRL+C and exceptions

@@ -67,8 +67,8 @@ class output():
       print(Fore.MAGENTA + ":".join("{:02x}".format(ord(c)) for c in str) + Style.RESET_ALL)
 
   # show information
-  def info(self, msg):
-    if msg: print(Back.BLUE + msg + Style.RESET_ALL)
+  def info(self, msg, eol=None):
+    if msg: print(Back.BLUE + msg + Style.RESET_ALL, end=eol)
 
   # show raw data
   def raw(self, msg, eol=None):
@@ -133,6 +133,38 @@ class output():
                                  if opt3 else (Back.RED + str(opt3) + Back.BLUE + "  ")
       opt = opt1, opt2, opt3
       self.info("%-35s %-12s %-7s %-7s %-7s" % ((path, cmd) + opt))
+
+  # dump ps dictionary
+  def psdict(self, data, indent=''):
+    reload(sys) # workaround for non-ascii output
+    sys.setdefaultencoding('UTF8')
+    # convert list to dictionary with indices as keys
+    if isinstance(data, list):
+      data = dict(enumerate(data))
+    # data now is expected to be a dictionary
+    if len(data.keys()) > 0: last = sorted(data.keys())[-1]
+    for key, val in sorted(data.items()):
+      type  = val['type'].replace('type', '')
+      value = val['value']
+      perms = val['perms']
+      recursion = False
+      # current enty is a dictionary
+      if isinstance(value, dict):
+        value, recursion = '', True
+      # current enty is a ps array
+      if isinstance(value, list): 
+        try: # array contains only atomic values
+          value = ' '.join(x['value'] for x in value)
+        except: # array contains further list or dict
+          # value = sum(val['value'], [])
+          value, recursion = '', True
+      # value = value.encode('ascii',errors='ignore')
+      node = '┬' if recursion else '─'
+      edge = indent + ('╰' if key == last else '├')
+      # output current node in dictionary
+      print("%s%s %-3s  %-11s  %-30s  %s" % (edge, node, perms, type, key, value))
+      if recursion: # ...
+        self.psdict(val['value'], indent + (' ' if key == last else '│'))
 
   # countdown from sec to zero
   def countdown(self, msg, sec, cmd):
@@ -242,7 +274,7 @@ class conn(object):
     wd = 0.0 # watchdog timeout counter
     r = re.compile(delimiter, re.DOTALL)
     s = re.compile("^\x04?\x0d?\x0a?" + delimiter, re.DOTALL)
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     while not r.search(data):
       data += self.recv(4096) # receive actual data
       if self.past(limit, wd): wd_old, bytes = wd, len(data)
@@ -256,7 +288,7 @@ class conn(object):
       # visual feedback on large/slow data transfers
       if self.slow(limit, wd) and self.past(0.1, wd) and len(data) > 0:
         output().chitchat(str(len(data)) + " bytes received\r", '')
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # clear current line from 'so-many bytes received' chit-chat
     if self.slow(limit, wd): output().chitchat(' ' * 24 + "\r", '')
     # warn if feedback expected but response empty (= delimiter only)
@@ -294,7 +326,7 @@ class conn(object):
   def beautify(self, data):
     # remove sent/recv uel sequences
     data = re.sub(r'' + const.UEL, '', data)
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     if self.mode == 'ps':
       # remove sent postscript header
       data = re.sub(r'' + re.escape(const.PS_HEADER), '', data)
@@ -304,11 +336,11 @@ class conn(object):
       data = re.sub(r'\(DELIMITER\d+\\n\) print flush\n', '', data)
       # remove recv delimiter token
       data = re.sub(r'DELIMITER\d+', '', data)
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     elif self.mode == 'pjl':
       # remove sent/recv delimiter token
       data = re.sub(r'@PJL ECHO\s+DELIMITER\d+', '', data)
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     elif self.mode == 'pcl':
       # remove sent delimiter token
       data = re.sub(r'\x1b\*s-\d+X', '', data)
@@ -317,7 +349,7 @@ class conn(object):
       # replace sent escape sequences
       data = re.sub(r'(' + const.ESC + ')', '<Esc>', data)
       pass
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # replace lineseps in between
     data = re.sub(r'\x0d?\x0a?\x0c', os.linesep, data)
     # remove eot/eof sequences
@@ -333,19 +365,19 @@ class const(): # define constants
   UEL         = ESC + '%-12345X' # universal exit language
   EOF         = EOL + '\x0c\x04' # potential end of file chars
   DELIMITER   = "DELIMITER" # delimiter marking end of repsonse
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   PS_ERROR    = '%%\[ Error: (.*)\]%%'
   PS_FLUSH    = '%%\[ Flushing: (.*)\]%%'
   PS_PROMPT   = '>' # TBD: could be derived from PS command 'prompt'
-  PS_HEADER   = '@PJL ENTER LANGUAGE = POSTSCRIPT\n%!PS\n'
+  PS_HEADER   = '@PJL ENTER LANGUAGE = POSTSCRIPT\n%!\n'
   PS_IOHACK   = '/print {(%stdout) (w) file dup 3 2 roll writestring flushfile} def\n'\
                 '/== {128 string cvs print (\\n) print} def\n'
   PCL_HEADER  = '@PJL ENTER LANGUAGE = PCL' + EOL + ESC
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   SUPERBLOCK  = '31337' # define super macro id to contain pclfs table
   BLOCKRANGE  = range(10000,20000) # use those macros for file content
   FILE_EXISTS = -1 # file size to be returned if file/dir size unknown
   NONEXISTENT = -2 # file size to be returned if a file does not exist
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   PS_VOL      = '' # no default volume in ps (read: any, write: first)
   PJL_VOL     = '0:/' # default pjl volume name || unix path seperator

@@ -22,6 +22,7 @@ class printer(cmd.Cmd, object):
   fuzz = False
   conn = None
   mode = None
+  error = None
   iohack = True
   timeout = 10
   target = ""
@@ -210,7 +211,11 @@ class printer(cmd.Cmd, object):
     except Exception as e:
       output().errmsg("Cannot set timeout", str(e))
 
-  # --------------------------------------------------------------------
+  # ------------------------[ reconnect ]-------------------------------
+  def do_reconnect(self, *arg):
+    self.do_close()
+    self.do_open(self.target, 'reconnect')
+
   # re-open connection
   def reconnect(self, msg):
     # on incomplete command show error message
@@ -363,6 +368,15 @@ class printer(cmd.Cmd, object):
     return path
 
   # ====================================================================
+
+  # ------------------------[ print <file> ]----------------------------
+  def do_print(self, arg):
+    'Send raw data to printer:  print "text"|<file>'
+    if not arg:
+      arg = raw_input('"Text" or file: ')
+    if arg.startswith('"'): data = arg.strip('"')
+    else: data = file().read(arg)
+    if data: self.conn.send(c.UEL + data + c.UEL)
 
   # ------------------------[ get <file> ]------------------------------
   def do_get(self, arg, lpath="", r=True):
@@ -546,8 +560,9 @@ class printer(cmd.Cmd, object):
     return completions
 
   # define alias
-  complete_load = complete_lfiles # files or directories
-  complete_put  = complete_lfiles # files or directories
+  complete_load  = complete_lfiles # files or directories
+  complete_print = complete_lfiles # files or directories
+  complete_put   = complete_lfiles # files or directories
 
   # ====================================================================
 

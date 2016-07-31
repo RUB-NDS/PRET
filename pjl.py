@@ -262,174 +262,6 @@ class pjl(printer):
 
   # ====================================================================
 
-  # ------------------------[ display <message> ]-----------------------
-  def do_display(self, arg):
-    "Set printer's display message:  display <message>"
-    if not arg:
-      arg = raw_input("Message: ")
-    arg = arg.strip('"') # remove quotes
-    self.cmd('@PJL RDYMSG DISPLAY="' + arg + '"', False)
-
-  # ------------------------[ offline <message> ]-----------------------
-  def do_offline(self, arg):
-    "Take printer offline and display message:  offline <message>"
-    if not arg:
-      arg = raw_input("Offline display message: ")
-    arg = arg.strip('"') # remove quotes
-    output().warning("Warning: Taking the printer offline will prevent yourself and others")
-    output().warning("from printing or re-connecting to the device. Press CTRL+C to abort.")
-    if output().countdown("Taking printer offline in...", 10, self):
-      self.cmd('@PJL OPMSG DISPLAY="' + arg + '"', False)
-
-  # ------------------------[ restart ]---------------------------------
-  def do_restart(self, arg):
-    "Restart printer."
-    self.cmd('@PJL DMCMD ASCIIHEX="040006020501010301040104"', False)
-
-  # ------------------------[ reset ]-----------------------------------
-  def do_reset(self, arg):
-    "Reset to factory defaults."
-    if output().countdown("Restoring factory defaults in...", 10, self):
-      # reset nvram for pml-aware printers (hp)
-      self.cmd('@PJL DMCMD ASCIIHEX="040006020501010301040106"', False)
-      # this one might work on ancient laserjets
-      self.cmd('@PJL SET SERVICEMODE=HPBOISEID' + c.EOL
-             + '@PJL CLEARNVRAM'                + c.EOL
-             + '@PJL NVRAMINIT'                 + c.EOL
-             + '@PJL SET SERVICEMODE=EXIT', False)
-
-  # ------------------------[ selftest ]--------------------------------
-  def do_selftest(self, arg):
-    "Perform various printer self-tests."
-    # pjl-based testpage commands
-    pjltests = ['SELFTEST',                 # pcl self-test 
-                'PCLTYPELIST',              # pcl typeface list
-                'CONTSELFTEST',             # continuous self-test
-                'PCLDEMOPAGE',              # pcl demo page
-                'PSCONFIGPAGE',             # ps configuration page
-                'PSTYPEFACELIST',           # ps typeface list
-                'PSDEMOPAGE',               # ps demo page
-                'EVENTLOG',                 # printer event log
-                'DATASTORE',                # pjl variables
-                'ERRORREPORT',              # error report
-                'SUPPLIESSTATUSREPORT']     # supplies status
-    for test in pjltests: self.cmd('@PJL SET TESTPAGE=' + test, False)
-    # pml-based testpage commands
-    pmltests = ['"04000401010502040103"',   # pcl self-test 
-                '"04000401010502040107"',   # drinter event log
-                '"04000401010502040108"',   # directory listing
-                '"04000401010502040109"',   # menu map
-                '"04000401010502040164"',   # usage page
-                '"04000401010502040165"',   # supplies page
-              # '"040004010105020401FC"',   # auto cleaning page
-              # '"0440004010105020401FD"',  # cleaning page
-                '"040004010105020401FE"',   # paper path test
-                '"040004010105020401FF"',   # registration page
-                '"040004010105020402015E"', # pcl font list
-                '"04000401010502040201C2"'] # ps font list
-    for test in pmltests: self.cmd('@PJL DMCMD ASCIIHEX=' + test, False)
-
-  # ------------------------[ format ]----------------------------------
-  def do_format(self, arg):
-    "Initialize printer's mass storage file system."
-    output().warning("Warning: Initializing the printer's file system will whipe-out all")
-    output().warning("user data (e.g. stored jobs) on the volume. Press CTRL+C to abort.")
-    if output().countdown("Initializing volume " + self.vol[:2] + " in...", 10, self):
-      self.cmd('@PJL FSINIT VOLUME="' + self.vol[0] + '"', False)
-
-  # ------------------------[ disable ]---------------------------------
-  def do_disable(self, arg):
-    "Disable printing functionality."
-    self.disable = not self.disable
-    str_disable = "OFF" if self.disable else "ON"
-    self.chitchat("Printing " + str_disable)
-    self.do_set('JOBMEDIA=' + str_disable)
-
-  # ------------------------[ hold ]------------------------------------
-  def do_hold(self, arg):
-    "Enable job retention."
-    self.chitchat("Setting job retention, reconnecting to see if still enabled")
-    self.do_set('HOLD=ON')
-    self.do_close()
-    self.do_open(self.target, 'reconnect')
-    output().raw("Retention for future print jobs: ", '')
-    hold = self.do_info('variables', '^HOLD', False)
-    output().info(item(re.findall("=(.*)\s+\[", item(item(hold)))))
-
-  # ------------------------[ nvram ]-----------------------------------
-  # nvram operations (brother-specific)
-  def do_nvram(self, arg):
-    # dump nvram
-    if arg.startswith('dump'):
-      bs = 2**9    # memory block size used for sampling
-      max = 2**18  # maximum memory address for sampling
-      steps = 2**9 # number of bytes to dump at once (feedback-performance trade-off)
-      outfile = self.basename(self.target) + '.nvram' # local copy of printer's nvram
-      # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      # ******* sampling: populate memspace with valid addresses ******
-      if len(re.split("\s+", arg, 1)) > 1:
-        memspace = []
-        commands = ['@PJL RNVRAM ADDRESS=' + str(n) for n in range(0, max, bs)]
-        self.chitchat("Sampling memory space (bs=" + str(bs) + ", max=" + str(max) + ")")
-        for chunk in (list(chunks(commands, steps))):
-          str_recv = self.cmd(c.EOL.join(chunk))
-          # break on unsupported printers
-          if not str_recv: return
-          # collect valid memory addresses
-          blocks = re.findall('ADDRESS\s*=\s*(\d+)', str_recv)
-          for addr in blocks: memspace += range(int(addr), int(addr) + bs)
-          self.chitchat(str(len(blocks)) + " blocks found. ", '')
-      else: # use fixed memspace (quick & dirty but might cover interesting stuff)
-        memspace = range(0, 8192) + range(32768, 33792) + range(53248, 59648)
-      # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      # ******* dumping: read nvram and write copy to local file ******
-      commands = ['@PJL RNVRAM ADDRESS=' + str(n) for n in memspace]
-      self.chitchat("Writing copy to " + outfile)
-      file().write(outfile, '') # first write empty file
-      for chunk in (list(chunks(commands, steps))):
-        str_recv = self.cmd(c.EOL.join(chunk))
-        # break on unsupported printers
-        if not str_recv: return os.remove(outfile)
-        for data in re.findall('DATA\s*=\s*(\d+)', str_recv):
-          char = chr(int(data))
-          # append char to file
-          file().append(outfile, char)
-          # print char to screen
-          output().raw(char if int(data) in range(32, 127) else '.', "")
-      print
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    # read nvram (single byte)
-    elif arg.startswith('read'):
-      arg = re.split("\s+", arg, 1)
-      if len(arg) > 1:
-        arg, addr = arg
-        output().info(self.cmd('@PJL RNVRAM ADDRESS=' + addr))
-      else: self.help_nvram()
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    # write nvram (single byte)
-    elif arg.startswith('write'):
-      arg = re.split("\s+", arg, 2)
-      if len(arg) > 2:
-        arg, addr, data = arg
-        self.cmd('@PJL SUPERUSER PASSWORD=0' + c.EOL
-               + '@PJL WNVRAM ADDRESS=' + addr + ' DATA=' + data + c.EOL
-               + '@PJL SUPERUSEROFF', False)
-      else: self.help_nvram()
-    else:
-      self.help_nvram()
-
-  def help_nvram(self):
-    print("NVRAM operations:  nvram <operation>")
-    print("  nvram dump [all]           - Dump (all) NVRAM to local file.")
-    print("  nvram read addr            - Read single byte from address.")
-    print("  nvram write addr value     - Write single byte to address.")
-
-  options_nvram = ('dump', 'read', 'write')
-  def complete_nvram(self, text, line, begidx, endidx):
-    return [cat for cat in self.options_nvram if cat.startswith(text)]
-
-  # ====================================================================
-
   # ------------------------[ id ]--------------------------------------
   def do_id(self, *arg):
     "Show device information (alias for 'info id')."
@@ -526,6 +358,176 @@ class pjl(printer):
            + '@PJL DEFAULT ' + arg            + c.EOL
            + '@PJL SET '     + arg            + c.EOL
            + '@PJL SET SERVICEMODE=EXIT', False)
+
+  # ====================================================================
+
+  # ------------------------[ display <message> ]-----------------------
+  def do_display(self, arg):
+    "Set printer's display message:  display <message>"
+    if not arg:
+      arg = raw_input("Message: ")
+    arg = arg.strip('"') # remove quotes
+    self.cmd('@PJL RDYMSG DISPLAY="' + arg + '"', False)
+
+  # ------------------------[ offline <message> ]-----------------------
+  def do_offline(self, arg):
+    "Take printer offline and display message:  offline <message>"
+    if not arg:
+      arg = raw_input("Offline display message: ")
+    arg = arg.strip('"') # remove quotes
+    output().warning("Warning: Taking the printer offline will prevent yourself and others")
+    output().warning("from printing or re-connecting to the device. Press CTRL+C to abort.")
+    if output().countdown("Taking printer offline in...", 10, self):
+      self.cmd('@PJL OPMSG DISPLAY="' + arg + '"', False)
+
+  # ------------------------[ restart ]---------------------------------
+  def do_restart(self, arg):
+    "Restart printer."
+    self.cmd('@PJL DMCMD ASCIIHEX="040006020501010301040104"', False)
+
+  # ------------------------[ reset ]-----------------------------------
+  def do_reset(self, arg):
+    "Reset to factory defaults."
+    if output().countdown("Restoring factory defaults in...", 10, self):
+      # reset nvram for pml-aware printers (hp)
+      self.cmd('@PJL DMCMD ASCIIHEX="040006020501010301040106"', False)
+      # this one might work on ancient laserjets
+      self.cmd('@PJL SET SERVICEMODE=HPBOISEID' + c.EOL
+             + '@PJL CLEARNVRAM'                + c.EOL
+             + '@PJL NVRAMINIT'                 + c.EOL
+             + '@PJL SET SERVICEMODE=EXIT', False)
+
+  # ------------------------[ selftest ]--------------------------------
+  def do_selftest(self, arg):
+    "Perform various printer self-tests."
+    # pjl-based testpage commands
+    pjltests = ['SELFTEST',                 # pcl self-test 
+                'PCLTYPELIST',              # pcl typeface list
+                'CONTSELFTEST',             # continuous self-test
+                'PCLDEMOPAGE',              # pcl demo page
+                'PSCONFIGPAGE',             # ps configuration page
+                'PSTYPEFACELIST',           # ps typeface list
+                'PSDEMOPAGE',               # ps demo page
+                'EVENTLOG',                 # printer event log
+                'DATASTORE',                # pjl variables
+                'ERRORREPORT',              # error report
+                'SUPPLIESSTATUSREPORT']     # supplies status
+    for test in pjltests: self.cmd('@PJL SET TESTPAGE=' + test, False)
+    # pml-based testpage commands
+    pmltests = ['"04000401010502040103"',   # pcl self-test 
+                '"04000401010502040107"',   # drinter event log
+                '"04000401010502040108"',   # directory listing
+                '"04000401010502040109"',   # menu map
+                '"04000401010502040164"',   # usage page
+                '"04000401010502040165"',   # supplies page
+              # '"040004010105020401FC"',   # auto cleaning page
+              # '"0440004010105020401FD"',  # cleaning page
+                '"040004010105020401FE"',   # paper path test
+                '"040004010105020401FF"',   # registration page
+                '"040004010105020402015E"', # pcl font list
+                '"04000401010502040201C2"'] # ps font list
+    for test in pmltests: self.cmd('@PJL DMCMD ASCIIHEX=' + test, False)
+
+  # ------------------------[ format ]----------------------------------
+  def do_format(self, arg):
+    "Initialize printer's mass storage file system."
+    output().warning("Warning: Initializing the printer's file system will whipe-out all")
+    output().warning("user data (e.g. stored jobs) on the volume. Press CTRL+C to abort.")
+    if output().countdown("Initializing volume " + self.vol[:2] + " in...", 10, self):
+      self.cmd('@PJL FSINIT VOLUME="' + self.vol[0] + '"', False)
+
+  # ------------------------[ disable ]---------------------------------
+  def do_disable(self, arg):
+    "Disable printing functionality."
+    self.disable = not self.disable
+    str_disable = "OFF" if self.disable else "ON"
+    output().chitchat("Printing functionality: " + str_disable)
+    self.do_set('JOBMEDIA=' + str_disable)
+
+  # ------------------------[ hold ]------------------------------------
+  def do_hold(self, arg):
+    "Enable job retention."
+    self.chitchat("Setting job retention, reconnecting to see if still enabled")
+    self.do_set('HOLD=ON')
+    self.do_reconnect()
+    output().raw("Retention for future print jobs: ", '')
+    hold = self.do_info('variables', '^HOLD', False)
+    output().info(item(re.findall("=(.*)\s+\[", item(item(hold)))) or 'NOT AVAILABLE')
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    ### Sagemcom printers: @PJL SET RETAIN_JOB_BEFORE_PRINT = ON
+    ###                    @PJL SET RETAIN_JOB_AFTER_PRINT  = ON
+
+  # ------------------------[ nvram ]-----------------------------------
+  # nvram operations (brother-specific)
+  def do_nvram(self, arg):
+    # dump nvram
+    if arg.startswith('dump'):
+      bs = 2**9    # memory block size used for sampling
+      max = 2**18  # maximum memory address for sampling
+      steps = 2**9 # number of bytes to dump at once (feedback-performance trade-off)
+      outfile = self.basename(self.target) + '.nvram' # local copy of printer's nvram
+      #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # ******* sampling: populate memspace with valid addresses ******
+      if len(re.split("\s+", arg, 1)) > 1:
+        memspace = []
+        commands = ['@PJL RNVRAM ADDRESS=' + str(n) for n in range(0, max, bs)]
+        self.chitchat("Sampling memory space (bs=" + str(bs) + ", max=" + str(max) + ")")
+        for chunk in (list(chunks(commands, steps))):
+          str_recv = self.cmd(c.EOL.join(chunk))
+          # break on unsupported printers
+          if not str_recv: return
+          # collect valid memory addresses
+          blocks = re.findall('ADDRESS\s*=\s*(\d+)', str_recv)
+          for addr in blocks: memspace += range(int(addr), int(addr) + bs)
+          self.chitchat(str(len(blocks)) + " blocks found. ", '')
+      else: # use fixed memspace (quick & dirty but might cover interesting stuff)
+        memspace = range(0, 8192) + range(32768, 33792) + range(53248, 59648)
+      #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # ******* dumping: read nvram and write copy to local file ******
+      commands = ['@PJL RNVRAM ADDRESS=' + str(n) for n in memspace]
+      self.chitchat("Writing copy to " + outfile)
+      file().write(outfile, '') # first write empty file
+      for chunk in (list(chunks(commands, steps))):
+        str_recv = self.cmd(c.EOL.join(chunk))
+        # break on unsupported printers
+        if not str_recv: return os.remove(outfile)
+        for data in re.findall('DATA\s*=\s*(\d+)', str_recv):
+          char = chr(int(data))
+          # append char to file
+          file().append(outfile, char)
+          # print char to screen
+          output().raw(char if int(data) in range(32, 127) else '.', "")
+      print
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # read nvram (single byte)
+    elif arg.startswith('read'):
+      arg = re.split("\s+", arg, 1)
+      if len(arg) > 1:
+        arg, addr = arg
+        output().info(self.cmd('@PJL RNVRAM ADDRESS=' + addr))
+      else: self.help_nvram()
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # write nvram (single byte)
+    elif arg.startswith('write'):
+      arg = re.split("\s+", arg, 2)
+      if len(arg) > 2:
+        arg, addr, data = arg
+        self.cmd('@PJL SUPERUSER PASSWORD=0' + c.EOL
+               + '@PJL WNVRAM ADDRESS=' + addr + ' DATA=' + data + c.EOL
+               + '@PJL SUPERUSEROFF', False)
+      else: self.help_nvram()
+    else:
+      self.help_nvram()
+
+  def help_nvram(self):
+    print("NVRAM operations:  nvram <operation>")
+    print("  nvram dump [all]         - Dump (all) NVRAM to local file.")
+    print("  nvram read addr          - Read single byte from address.")
+    print("  nvram write addr value   - Write single byte to address.")
+
+  options_nvram = ('dump', 'read', 'write')
+  def complete_nvram(self, text, line, begidx, endidx):
+    return [cat for cat in self.options_nvram if cat.startswith(text)]
 
   # ====================================================================
 
