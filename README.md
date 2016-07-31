@@ -146,13 +146,28 @@ Generic (file) operations with a PS/PJL/PCL specific implementation are:
 ```
 id         Show device information.
 version    Show PostScript interpreter version.
-shell      Open interactive PostScript shell.
-uptime     Show system uptime (might be random).
 devices    Show available I/O devices.
-known      List supported PostScript operators:  known <operator>
-reset      Reset PostScript parameters to factory defaults.
+uptime     Show system uptime (might be random).
+date       Show printer's system date and time.
+
 lock       Lock changing of system parameters.
 unlock     Unlock changing of system parameters.
+restart    Restart PostScript interpreter.
+reset      Reset PostScript settings to factory defaults.
+disable    Disable printing functionality.
+
+overlay    Put overlay eps file on all hardcopies:  overlay <file.eps>
+cross      Put printer graffiti on all hardcopies:  cross <font> <text>
+replace    Replace string in documents to be printed:  replace <old> <new>
+capture    Capture jobs to be printed on this device.
+hold       Enable job retention.
+
+known      List supported PostScript operators:  known <operator>
+search     Search all dictionaries by key:  search <key>
+dicts      Return a list of dictionaries and their permissions.
+dump       Dump dictionary:  dump <dict>
+set        Set key to value in topmost dictionary:  set <key=value>
+config     Change printer settings:  config <setting>
 ```
 
 ### Commands in PJL mode
