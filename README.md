@@ -155,6 +155,7 @@ unlock     Unlock changing of system parameters.
 restart    Restart PostScript interpreter.
 reset      Reset PostScript settings to factory defaults.
 disable    Disable printing functionality.
+destroy    Cause physical damage to printer's NVRAM.
 
 overlay    Put overlay eps file on all hardcopies:  overlay <file.eps>
 cross      Put printer graffiti on all hardcopies:  cross <font> <text>
@@ -166,6 +167,7 @@ set        Set key to value in topmost dictionary:  set <key=value>
 known      List supported PostScript operators:  known <operator>
 search     Search all dictionaries by key:  search <key>
 dicts      Return a list of dictionaries and their permissions.
+resource   List or dump PostScript resource:  resource <category> [dump]
 
 dump       Dump dictionary:  dump <dict>
   Dictionaries: - systemdict - statusdict - userdict 
@@ -187,6 +189,7 @@ config     Change printer settings:  config <setting>
 id         Show device information.
 status     Enable status messages.
 version    Show firmware version or serial number (from 'info config').
+pagecount  Manipulate printer's page counter:  pagecount <number>
 printenv   Show printer environment variable:  printenv <VAR>
 env        Show environment variables (alias for 'info variables').
 set        Set printer environment variable:  set <VAR=VALUE>
@@ -197,6 +200,7 @@ restart    Restart printer.
 reset      Reset to factory defaults.
 selftest   Perform various printer self-tests.
 disable    Disable printing functionality.
+destroy    Cause physical damage to printer's NVRAM.
 
 lock       Lock control panel settings and disk write access.
 unlock     Unlock control panel settings and disk write access.
