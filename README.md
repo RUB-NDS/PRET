@@ -150,8 +150,8 @@ devices    Show available I/O devices.
 uptime     Show system uptime (might be random).
 date       Show printer's system date and time.
 
-lock       Lock changing of system parameters.
-unlock     Unlock changing of system parameters.
+lock       Set startjob and system parameters password.
+unlock     Unset startjob and system parameters password.
 restart    Restart PostScript interpreter.
 reset      Reset PostScript settings to factory defaults.
 disable    Disable printing functionality.
@@ -160,7 +160,7 @@ destroy    Cause physical damage to printer's NVRAM.
 overlay    Put overlay eps file on all hardcopies:  overlay <file.eps>
 cross      Put printer graffiti on all hardcopies:  cross <font> <text>
 replace    Replace string in documents to be printed:  replace <old> <new>
-capture    Capture jobs to be printed on this device.
+capture    Capture further jobs to be printed on this device.
 hold       Enable job retention.
 
 set        Set key to value in topmost dictionary:  set <key=value>
