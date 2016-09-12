@@ -3,11 +3,14 @@
 # python standard library
 import re, os, sys, urllib2
 
-# third party modules
-from snimpy.manager import Manager, load
-
 # local pret classes
 from helper import output, item
+
+# third party modules
+try:
+  from snimpy.manager import Manager, load
+except ImportError:
+  output().warning("Please install the 'snimpy' module for SNMP support.")
 
 class capabilities():
   # set defaults
@@ -58,7 +61,7 @@ class capabilities():
       body = ("\x01\x01\x00\x0b\x00\x01\xab\x10\x01G\x00\x12attributes-charset\x00\x05utf-8H"
             + "\x00\x1battributes-natural-language\x00\x02enE\x00\x0bprinter-uri\x00\x14ipp:"
             + "//localhost/ipp/D\x00\x14requested-attributes\x00\x13printer-description\x03")
-      request  = urllib2.Request("http://" + host + ":631/ipp/port1",
+      request  = urllib2.Request("http://" + host + ":631/",
                  data=body, headers={'Content-type': 'application/ipp'})
       response = urllib2.urlopen(request, timeout=self.timeout).read()
       model = re.findall("MDL:(.+?);", response) # e.g. MDL:hp LaserJet 4250

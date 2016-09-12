@@ -154,7 +154,7 @@ class printer(cmd.Cmd, object):
     if len(arg) > 1:
       cmd = arg.pop(0)
       for item in arg:
-        print("Executing command: '" + cmd + " " + item + "'")
+        output().chitchat("Executing command: '" + cmd + " " + item + "'")
         self.onecmd(cmd + " " + item)
     else:
       self.onecmd("help loop")
@@ -247,7 +247,7 @@ class printer(cmd.Cmd, object):
       arg = raw_input("Volume: ")
     if arg and self.vol_exists(arg):
       if self.mode == 'ps':  self.set_vol('%' + arg.strip('%') + '%')
-      if self.mode == 'pjl': self.set_vol(arg[0] + ':/')
+      if self.mode == 'pjl': self.set_vol(arg[0] + ':' + c.SEP)
       print("Volume changed to " + self.vol)
     else:
       print("Volume not available")
@@ -359,6 +359,7 @@ class printer(cmd.Cmd, object):
     │ [✓] sets '.' for 'dir/..', refused by ps interpreters │
     └───────────────────────────────────────────────────────┘
     '''
+    ### path = re.sub(r"(/)", "\\\\", path) ########## EPSON/SAMSUNG XXX
     return path if path != '.' else ''
 
   # --------------------------------------------------------------------
@@ -494,7 +495,8 @@ class printer(cmd.Cmd, object):
 
   # ------------------------[ mirror <path> ]---------------------------
   def mirror(self, name, size):
-    root = os.path.abspath(self.target + os.sep + self.get_vol())
+    target, vol = self.basename(self.target), self.get_vol()
+    root = os.path.abspath(os.path.join('mirror', target, vol))
     lpath = os.path.join(root, name)
     '''
     ┌───────────────────────────────────────────────────────────┐
@@ -508,7 +510,7 @@ class printer(cmd.Cmd, object):
     │                                                           │
     │ our strategy is to first replace trivial path traversal   │
     │ strings (while still beeing able to download the files)   │
-    │ and for now simply give up on more sophisticated ones.    │
+    │ and simply give up on more sophisticated ones for now.    │
     └───────────────────────────────────────────────────────────┘
     '''
     # replace path traversal (poor man's version)

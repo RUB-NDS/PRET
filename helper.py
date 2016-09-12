@@ -6,7 +6,27 @@ from socket import socket
 import sys, re, os, stat, time, math
 
 # third party modules
-from colorama import Fore, Back, Style
+try:
+  from colorama import Fore, Back, Style
+except ImportError:
+  msg = "Please install the 'colorama' module for ANSI output."
+  # poor man's colored output (ANSI)
+  class Back():
+    BLUE       = '\x1b[44m'
+    CYAN       = '\x1b[46m'
+    GREEN      = '\x1b[42m'
+    MAGENTA    = '\x1b[45m'
+    RED        = '\x1b[41m'
+  class Fore():
+    BLUE       = '\x1b[34m'
+    CYAN       = '\x1b[36m'
+    MAGENTA    = '\x1b[35m'
+    YELLOW     = '\x1b[33m'
+  class Style():
+    BRIGHT    = '\x1b[1m'
+    DIM       = '\x1b[2m'
+    RESET_ALL = '\x1b[0m'
+  print(Back.RED + msg + Style.RESET_ALL)
 
 # ----------------------------------------------------------------------
 
@@ -207,7 +227,7 @@ class file():
 
   # append to local file
   def append(self, path, data):
-    self.write(path, data, 'ab')
+    self.write(path, data, 'ab+')
 
 # ----------------------------------------------------------------------
 
@@ -366,6 +386,7 @@ class const(): # define constants
   EOF         = EOL + '\x0c\x04' # potential end of file chars
   DELIMITER   = "DELIMITER" # delimiter marking end of repsonse
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  PS_CATCH    = '%%\[ (.*)\]%%'
   PS_ERROR    = '%%\[ Error: (.*)\]%%'
   PS_FLUSH    = '%%\[ Flushing: (.*)\]%%'
   PS_PROMPT   = '>' # TBD: could be derived from PS command 'prompt'
@@ -380,4 +401,4 @@ class const(): # define constants
   NONEXISTENT = -2 # file size to be returned if a file does not exist
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   PS_VOL      = '' # no default volume in ps (read: any, write: first)
-  PJL_VOL     = '0:/' # default pjl volume name || unix path seperator
+  PJL_VOL     = '0:' + SEP # default pjl volume name || path seperator

