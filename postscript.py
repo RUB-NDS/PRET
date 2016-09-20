@@ -48,7 +48,7 @@ class postscript(printer):
         str_recv = re.sub(r'' + c.PS_CATCH + '\r?\n', '', str_recv)
     return str_recv
 
-  # disable printing hardcopies of error messages
+  # disable printing hard copies of error messages
   def on_connect(self, mode):
     if mode == 'init': # only for the first connection attempt
       str_send = '<< /DoPrintErrors false >> setsystemparams '\
@@ -92,7 +92,7 @@ class postscript(printer):
     if vol: vol = '%' + vol.strip('%') + '%'
     str_recv = self.cmd('/str 65535 string def (*)'
              + '{print (\\n) print} str devforall')
-    vols = str_recv.splitlines()
+    vols = str_recv.splitlines() + ['%*%']
     if vol: return vol in vols # return availability
     else: return vols # return list of existing vols
 
@@ -181,7 +181,7 @@ class postscript(printer):
 
   # ------------------------[ mirror <path> ]---------------------------
   def do_mirror(self, arg):
-    "Mirror remote filesystem to local directory:  mirror <remote path>"
+    "Mirror remote file system to local directory:  mirror <remote path>"
     for name in self.dirlist(arg):
       self.mirror(name, True)
 
@@ -455,20 +455,21 @@ class postscript(printer):
                  '   /StartJobPassword     (0)\n'
                  '>> setsystemparams')
         self.chitchat("\rNVRAM write cycles: " + str(n*1000), '')
+    print # echo newline if we get this far
 
   # ------------------------[ hang ]------------------------------------
   def do_hang(self, arg):
-    "Execute PostScript invinite loop."
-    output().warning("Warning: This command causes an invinite loop rendering the")
+    "Execute PostScript infinite loop."
+    output().warning("Warning: This command causes an infinite loop rendering the")
     output().warning("device useless until manual restart. Press CTRL+C to abort.")
-    if output().countdown("Executing PostScript invinite loop in...", 10, self):
+    if output().countdown("Executing PostScript infinite loop in...", 10, self):
       self.cmd('{} loop', False)
 
   # ====================================================================
 
   # ------------------------[ overlay <file.eps> ]----------------------
   def do_overlay(self, arg):
-    "Put overlay eps file on all hardcopies:  overlay <file.eps>"
+    "Put overlay eps file on all hard copies:  overlay <file.eps>"
     if not arg:
       arg = raw_input('File: ')
     data = file().read(arg)
@@ -500,7 +501,7 @@ class postscript(printer):
       self.onecmd("help cross")
 
   def help_cross(self):
-    print("Put printer graffiti on all hardcopies:  cross <font> <text>")
+    print("Put printer graffiti on all hard copies:  cross <font> <text>")
     print("Read the docs on how to install custom fonts. Available fonts:")
     for font in sorted(self.options_cross): print("• " + font)
 
@@ -676,9 +677,14 @@ class postscript(printer):
   # ------------------------[ hold ]------------------------------------
   def do_hold(self, arg):
     "Enable job retention."
-    self.cmd('<< /Collate true /CollateDetails '
-             '<< /Mode 0 /Type 8 /Hold 2 >> >> setpagedevice')
-    self.chitchat("Job retention enabled.")
+    output().info(self.cmd('serverdict begin 0 exitserver\n'
+               'currentpagedevice (CollateDetails) get (Hold) get 1 ne\n'
+               '{/retention 1 def}{/retention 0 def} ifelse\n'
+               '<< /Collate true /CollateDetails\n'
+               '<< /Hold retention /Type 8 >> >> setpagedevice\n'
+               '(Job retention ) print\n'
+               'currentpagedevice (CollateDetails) get (Hold) get 1 ne\n'
+               '{(disabled.) print}{(enabled.) print} ifelse'))
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     '''
     **************************** HP/KYOCERA ****************************

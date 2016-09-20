@@ -88,7 +88,7 @@ class pcl(printer):
       if id.startswith('1'): list.append(int(id))    ### a single regex
     return list
 
-  # get list of files on virtual filesystem
+  # get list of files on virtual file system
   def dirlist(self, pclfs={}):
     superblock = self.retrieve_data(c.SUPERBLOCK)
     if superblock: # de-serialize pclfs dictionary
@@ -99,7 +99,7 @@ class pcl(printer):
 
   # ------------------------[ ls ]--------------------------------------
   def do_ls(self, arg):
-    "List contents of virtual filesystem:  ls"
+    "List contents of virtual file system:  ls"
     pclfs = self.dirlist()
     if not pclfs: # no files have yet been uploaded
       output().raw("This is a virtual pclfs. Use 'put' to upload files.")
@@ -173,7 +173,7 @@ class pcl(printer):
     str_send += c.ESC + '&f8X'        # delete macro
     self.cmd(str_send, False)
 
-  # update information on virtual filesystem
+  # update information on virtual file system
   def update_superblock(self, pclfs):
     # serialize pclfs dictionary
     pclfs = json.dumps(pclfs)

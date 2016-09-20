@@ -360,6 +360,7 @@ class printer(cmd.Cmd, object):
     └───────────────────────────────────────────────────────┘
     '''
     ### path = re.sub(r"(/)", "\\\\", path) ########## EPSON/SAMSUNG XXX
+    ### path = re.sub(r"(/\.\.)", "/../.", path) ########## HP
     return path if path != '.' else ''
 
   # --------------------------------------------------------------------
@@ -590,7 +591,7 @@ class printer(cmd.Cmd, object):
     found = {} # pathes found
     # try base pathes first
     for path in self.vol_exists() + fuzzer().path:
-        self.verify_path(path, found)
+      self.verify_path(path, found)
     # try path traversal strategies
     if found:
       output().raw("Now checking traversal strategies.")

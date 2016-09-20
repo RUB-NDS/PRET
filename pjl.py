@@ -238,7 +238,7 @@ class pjl(printer):
 
   # ------------------------[ mirror <local path> ]---------------------
   def do_mirror(self, arg):
-    "Mirror remote filesystem to local directory:  mirror <remote path>"
+    "Mirror remote file system to local directory:  mirror <remote path>"
     print("Creating mirror of " + c.SEP + self.vpath(arg))
     self.fswalk(arg, 'mirror')
 
@@ -349,21 +349,21 @@ class pjl(printer):
   complete_set = complete_printenv
 
   # ------------------------[ set ]-------------------------------------
-  def do_set(self, arg):
+  def do_set(self, arg, fb=True):
     "Set printer environment variable:  set <VAR=VALUE>"
     if not arg:
       arg = raw_input("Set variable (VAR=VALUE): ")
     self.cmd('@PJL SET SERVICEMODE=HPBOISEID' + c.EOL
-           + '@PJL DEFAULT ' + arg            + c.EOL
-           + '@PJL SET '     + arg            + c.EOL
+           + '@PJL SET ' + arg                + c.EOL
            + '@PJL SET SERVICEMODE=EXIT', False)
-    self.onecmd('printenv ' + arg)
+    if fb: self.onecmd('printenv ' + arg)
 
   # ------------------------[ pagecount <number> ]----------------------
   def do_pagecount(self, arg):
     "Manipulate printer's page counter:  pagecount <number>"
     if not arg:
-      self.onecmd("help pagecount")
+      output().raw("Hardware page counter: ", '')
+      self.onecmd("info pagecount")
     else:
       output().raw("Old page counter: ", '')
       self.onecmd("info pagecount")
@@ -375,7 +375,7 @@ class pjl(printer):
       #        + '@PJL DEFAULT SCANPAGECOUNT='  + arg + c.EOL
       #        + '@PJL DEFAULT COPYPAGECOUNT='  + arg + c.EOL
       #        + '@PJL SET SERVICEMODE=EXIT', False)
-      self.onecmd("set PAGES=" + arg)
+      self.do_set("PAGES=" + arg, False)
       output().raw("New page counter: ", '')
       self.onecmd("info pagecount")
 
@@ -463,7 +463,7 @@ class pjl(printer):
     self.disable = not self.disable
     str_disable = "OFF" if self.disable else "ON"
     output().chitchat("Printing functionality: " + str_disable)
-    self.do_set('JOBMEDIA=' + str_disable)
+    self.do_set('JOBMEDIA=' + str_disable, False)
 
   # ------------------------[ destroy ]---------------------------------
   def do_destroy(self, arg):
@@ -471,19 +471,21 @@ class pjl(printer):
     output().warning("Warning: This command tries to cause physical damage to the")
     output().warning("printer NVRAM. Use at your own risk. Press CTRL+C to abort.")
     if output().countdown("Starting NVRAM write cycle loop in...", 10, self):
-      for n in range(1, 100000):
-        # self.cmd('@PJL DEFAULT COPIES=' + str(n%2+2), True)
-        # print n
-        # self.cmd('@PJL DEFAULT COPIES=' + str(n%999), True)
-        self.onecmd("set COPIES=" + str(n%999))
-        # if n % 100 == 0: output().countdown(str(n) + " write cycles, pausing for...", 3, self)
-        # self.onecmd("set PAGES=" + str(n)) # muss wieder auf False geändert werden!
+      max = 100000  # maximum number of nvram write cycles
+      steps =  100  # number of pjl commands to send at once
+      count =    0  # counter of executed nvram write cycles
+      commands = ['@PJL DEFAULT COPIES=' + str(n%90) for n in range(2, max)]
+      for chunk in (list(chunks(commands, steps))):
+         count = count + steps # increment counter for feedback
+         self.chitchat("\rNVRAM write cycles:  " + str(count), '')
+         self.cmd(c.EOL.join(chunk) + c.EOL + '@PJL INFO ID')
+    print # echo newline if we get this far
 
   # ------------------------[ hold ]------------------------------------
   def do_hold(self, arg):
     "Enable job retention."
     self.chitchat("Setting job retention, reconnecting to see if still enabled")
-    self.do_set('HOLD=ON')
+    self.do_set('HOLD=ON', False)
     self.do_reconnect()
     output().raw("Retention for future print jobs: ", '')
     hold = self.do_info('variables', '^HOLD', False)
