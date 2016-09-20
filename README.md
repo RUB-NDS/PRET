@@ -156,7 +156,7 @@ restart    Restart PostScript interpreter.
 reset      Reset PostScript settings to factory defaults.
 disable    Disable printing functionality.
 destroy    Cause physical damage to printer's NVRAM.
-hang       Execute PostScript invinite loop.
+hang       Execute PostScript infinite loop.
 
 overlay    Put overlay eps file on all hardcopies:  overlay <file.eps>
 cross      Put printer graffiti on all hardcopies:  cross <font> <text>
