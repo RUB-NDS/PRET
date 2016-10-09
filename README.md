@@ -149,6 +149,7 @@ version    Show PostScript interpreter version.
 devices    Show available I/O devices.
 uptime     Show system uptime (might be random).
 date       Show printer's system date and time.
+pagecount  Show printer's page counter.
 
 lock       Set startjob and system parameters password.
 unlock     Unset startjob and system parameters password.
