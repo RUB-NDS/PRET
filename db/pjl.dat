@@ -53,6 +53,7 @@
 4532/4245g
 4545/4518/4532
 5100WD
+554e
 5622
 5627
 5632
@@ -292,6 +293,11 @@ AL-M2300
 AL-M2310
 AR-168D
 AR-168S
+AR-266FG
+AR-266FP
+AR-267FP
+AR-311N
+AR-317S
 AR-5220
 AR-BC260
 AR-BC320
@@ -307,6 +313,16 @@ AR-C261M
 AR-C261S
 AR-C262M
 AR-C262S
+AR-M207
+AR-M236
+AR-M237
+AR-M256
+AR-M257
+AR-M258
+AR-M276
+AR-M316
+AR-M317
+AR-M318
 AR-M351N
 AR-M351U
 AR-M355N
@@ -323,70 +339,238 @@ AR-M700N
 AR-M700U
 B410
 B4300
+B4600
 B6200
 B6300
+bizhub 20
+Brother ADS-2500W
+Brother ADS-2600W
+Brother ADS-2600We
+Brother DCP-1610NW
+Brother DCP-1610W
 Brother DCP-7025
 Brother DCP-7045N
+Brother DCP-7055W
+Brother DCP-7057W
+Brother DCP-7065DN
+Brother DCP-7070DW
+Brother DCP-7180DN
 Brother DCP-8020
 Brother DCP-8025D
 Brother DCP-8040
+Brother DCP-8065DN
 Brother DCP-8080DN
 Brother DCP-8085DN
+Brother DCP-8110DN
+Brother DCP-8112DN
+Brother DCP-8150DN
+Brother DCP-8152DN
+Brother DCP-8155DN
+Brother DCP-8157DN
+Brother DCP-8250DN
 Brother DCP-9010CN
+Brother DCP-9015CDW
+Brother DCP-9020CDW
 Brother DCP-9040CN
 Brother DCP-9045CDN
+Brother DCP-9055CDN
+Brother DCP-9270CDN
+Brother DCP-J105
+Brother DCP-J132W
+Brother DCP-J152W
+Brother DCP-J4120DW
+Brother DCP-J525N
+Brother DCP-J525W
+Brother DCP-J552DW
+Brother DCP-J552N
+Brother DCP-J725DW
+Brother DCP-J740N
+Brother DCP-J925DW
+Brother DCP-J925N
+Brother DCP-J940N
+Brother DCP-J952N
+Brother DCP-L2520DW
+Brother DCP-L2540DN
+Brother DCP-L2540DW
+Brother DCP-L2560DW
+Brother DCP-L5500DN
+Brother DCP-L6600DW
+Brother DCP-L8400CDN
+Brother DCP-L8450CDW
+Brother DCP-T500W
+Brother HL-1210W
 Brother HL-1260
-Brother HL-1450 series
-Brother HL-1470N series
-Brother HL-1650_1670N series
-Brother HL-1850_1870N series
-Brother HL-2460 series
-Brother HL-2600CN series
-Brother HL-2700CN series
+Brother HL-1270N
+Brother HL-1450
+Brother HL-1470N
+Brother HL-1650_1670N
+Brother HL-1850_1870N
+Brother HL-2130
+Brother HL-2170W
+Brother HL-2250DN
+Brother HL-2270DW
+Brother HL-2280DW
+Brother HL-2460
+Brother HL-2600CN
+Brother HL-2700CN
+Brother HL-3040CN
+Brother HL-3045CN
 Brother HL-3070CW
-Brother HL-3260N series
-Brother HL-3450CN series
+Brother HL-3075CW
+Brother HL-3140CW
+Brother HL-3150CDN
+Brother HL-3150CDW
+Brother HL-3170CDW
+Brother HL-3172CDW
+Brother HL-3260N
+Brother HL-3450CN
+Brother HL-4040CDN
+Brother HL-4040CN
 Brother HL-4050CDN
 Brother HL-4070CDW
-Brother HL-5050 series
-Brother HL-5070N series
-Brother HL-5150D series
-Brother HL-5170DN series
-Brother HL-5240 series
-Brother HL-5270DN series
-Brother HL-5350DN series
-Brother HL-5370DW series
-Brother HL-5380DN series
-Brother HL-6050D_DN series
-Brother HL-6050 series
-Brother HL-7050 series
-Brother HL-720 series
-Brother HL-8050N series
+Brother HL-4140CN
+Brother HL-4150CDN
+Brother HL-4570CDW
+Brother HL-5050
+Brother HL-5070N
+Brother HL-5150D
+Brother HL-5170DN
+Brother HL-5240
+Brother HL-5250DN
+Brother HL-5270DN
+Brother HL-5350DN
+Brother HL-5370DW
+Brother HL-5380DN
+Brother HL-5450DN
+Brother HL-5470DW
+Brother HL-6050
+Brother HL-6050D_DN
+Brother HL-6180DW
+Brother HL-7050
+Brother HL-720
+Brother HL-8050N
+Brother HL-L2305
+Brother HL-L2340D
+Brother HL-L2360D
+Brother HL-L2380DW
+Brother HL-L5100DN
+Brother HL-L5200DW
+Brother HL-L6200DW
+Brother HL-L6300DW
+Brother HL-L6400DW
+Brother HL-L8250CDN
+Brother HL-L8350CDW
+Brother HL-L9200CDW
+Brother HL-S7000DN
+Brother MFC-1910W
 Brother MFC-7225N
+Brother MFC-7360N
+Brother MFC-7362N
+Brother MFC-7365DN
+Brother MFC-7440N
 Brother MFC-7450
+Brother MFC-7460DN
 Brother MFC-7820N
 Brother MFC-7840N
 Brother MFC-7840W
+Brother MFC-7860DN
+Brother MFC-7860DW
+Brother MFC-7880DN
 Brother MFC-8220
 Brother MFC-8370DN
 Brother MFC-8380DN
 Brother MFC-8420
 Brother MFC-8440
+Brother MFC-8460N
 Brother MFC-8480DN
+Brother MFC-8510DN
+Brother MFC-8512DN
+Brother MFC-8520DN
 Brother MFC-8640D
-Brother MFC-8670DN series
+Brother MFC-8660DN
+Brother MFC-8670DN
 Brother MFC-8680DN
+Brother MFC-8690DW
+Brother MFC-8710DW
+Brother MFC-8712DW
+Brother MFC-8810DW
 Brother MFC-8820D
 Brother MFC-8840D
+Brother MFC-8860DN
+Brother MFC-8870DW
 Brother MFC-8880DN
 Brother MFC-8890DW
+Brother MFC-8910DW
+Brother MFC-8912DW
+Brother MFC-8950DW
+Brother MFC-8952DW
 Brother MFC-9010CN
 Brother MFC-9120CN
+Brother MFC-9125CN
+Brother MFC-9130CW
+Brother MFC-9140CDN
+Brother MFC-9142CDN
 Brother MFC-9320CW
-Brother MFC-9420CN series
+Brother MFC-9325CW
+Brother MFC-9330CDW
+Brother MFC-9332CDW
+Brother MFC-9335CDW
+Brother MFC-9340CDW
+Brother MFC-9420CN
 Brother MFC-9440CN
 Brother MFC-9450CDN
+Brother MFC-9460CDN
+Brother MFC-9465CDN
+Brother MFC-9560CDW
 Brother MFC-9840CDW
+Brother MFC-9970CDW
+Brother MFC-J2310
+Brother MFC-J2510
+Brother MFC-J280W
+Brother MFC-J285DW
+Brother MFC-J3520
+Brother MFC-J3720
+Brother MFC-J425W
+Brother MFC-J430W
+Brother MFC-J4310DW
+Brother MFC-J435W
+Brother MFC-J4510DW
+Brother MFC-J470DW
+Brother MFC-J4710DW
+Brother MFC-J475DW
+Brother MFC-J5910CDW
+Brother MFC-J5910DW
+Brother MFC-J625DW
+Brother MFC-J6510DW
+Brother MFC-J6520DW
+Brother MFC-J6710CDW
+Brother MFC-J6710DW
+Brother MFC-J6720DW
+Brother MFC-J6910DW
+Brother MFC-J6920DW
+Brother MFC-J6970CDW
+Brother MFC-J825DW
+Brother MFC-J825N
+Brother MFC-J835DW
+Brother MFC-J840N
+Brother MFC-J860DN
+Brother MFC-J870DW
+Brother MFC-J875DW
+Brother MFC-J955DN
+Brother MFC-J960DN
+Brother MFC-J980DN
+Brother MFC-L2700DN
+Brother MFC-L2700DW
+Brother MFC-L2705DW
+Brother MFC-L2720DW
+Brother MFC-L2740DW
+Brother MFC-L5700DN
+Brother MFC-L5850DW
+Brother MFC-L5900DW
+Brother MFC-L8600CDW
+Brother MFC-L8650CDW
+Brother MFC-L8850CDW
+Brother MFC-L9550CDW
 Business Inkjet 2200
 Business Inkjet 2230
 Business Inkjet 2250
@@ -396,6 +580,7 @@ Business Inkjet 2300
 Business Inkjet 2600
 Business Inkjet 2800
 Business Inkjet 3000
+C210SF
 C 230
 C 230SR
 C 240
@@ -409,12 +594,15 @@ C2820
 C2824
 C2828
 C3030
+C3200n
 C3210
 C3210e
 C3224
 C3333
 C3528
 C3535
+C364
+C368
 C3828
 C4040
 C4535
@@ -422,13 +610,17 @@ C4540
 C5050
 C510
 C510b
+C5200n
+C5250n
 C5300
 C5400
 C5450
+C554
 C5700
 C5900
 C6045
 C6055
+C610
 C6100
 C7010
 C7100
@@ -448,6 +640,7 @@ C7528n
 C7531dn
 C7535hdn
 C7535n
+C754
 C7570
 C7640nD
 C790
@@ -497,7 +690,9 @@ CLP37DN
 CLP42DN
 CLP-550
 CLP-550N
+CLP-770
 CLP831
+CLX-4190
 Color Laser 3010cn
 ColorLaser AP828
 Color LaserJet 2500
@@ -517,19 +712,21 @@ Color LaserJet 4600
 Color LaserJet 4610
 Color LaserJet 4650
 Color LaserJet 4700
-Color LaserJet 4730 MFP
+Color LaserJet 4730
 Color LaserJet 5
 Color LaserJet 5000
 Color LaserJet 5500
 Color LaserJet 5550
 Color LaserJet 5M
 Color LaserJet 9500
-Color LaserJet 9500 MFP
 Color LaserJet CM1015
 Color LaserJet CM1017
-Color LaserJet CM4730 MFP
+Color LaserJet CM4730
 Color LaserJet CP3505
 Color LaserJet CP4005
+ColorQube 8570DN
+ColorQube 8580DN
+ColorQube 8580N
 CS-1650
 CS-1815
 CS-2050
@@ -544,22 +741,96 @@ CS-C3225E KPDL
 CS-C3232E KPDL
 CS-C4035E KPDL
 CUPS v1.1
+d-Color P160
+DCP-1610NW
+DCP-1610W
 DCP-7010
 DCP-7020
 DCP-7025
 DCP-7045N
+DCP-7055W
+DCP-7057W
+DCP-7065DN
+DCP-7070DW
+DCP-7180DN
 DCP-8020
 DCP-8025D
 DCP-8040
 DCP-8045D
+DCP-8065DN
 DCP-8080DN
 DCP-8085DN
+DCP-8110DN
+DCP-8112DN
+DCP-8150DN
+DCP-8152DN
+DCP-8155DN
+DCP-8157DN
+DCP-8250DN
 DCP-9010CN
+DCP-9015CDW
+DCP-9020CDN
+DCP-9020CDW
 DCP-9040CN
 DCP-9045CDN
+DCP-9055CDN
+DCP-9270CDN
+DCP-J105
+DCP-J132W
+DCP-J152W
+DCP-J525N
+DCP-J525W
+DCP-J540N
+DCP-J552DW
+DCP-J552N
+DCP-J725DW
+DCP-J740N
+DCP-J925DW
+DCP-J925N
+DCP-J940N
+DCP-J952N
+DCP-L2520DW
+DCP-L2540DN
+DCP-L2540DW
+DCP-L2560DW
+DCP-L5500DN
+DCP-L6600DW
+DCP-L8400CDN
+DCP-L8450CDW
+DCP-T500W
+Dell 2330dn Laser
+Dell 2350dn Laser
+Dell 3330dn Laser
+Dell 3335dn Laser
+Dell 5130cdn Color Laser
+Dell 5230n Laser
+Dell 5350dn Laser
+Dell 5530dn Laser
+Dell 5535dn Laser
+Dell B2360dn Laser
+Dell B3460dn Laser
+Dell B3465dnf Laser
+Dell B5460dn Laser
+Dell Color Laser 1320c
 Dell Color Laser 3010cn
+Dell Color Laser 3110cn
+Dell Color Laser 5110cn
+Dell Laser Printer 1700n
+Dell Laser Printer 1710n
+Dell Laser Printer 1720dn
 Dell Laser Printer 3000cn
 Dell Laser Printer 3100cn
+Dell Laser Printer 5100cn
+Dell Laser Printer 5210n
+Dell Laser Printer 5310n
+Dell Laser Printer M5200
+Dell Laser Printer W5300
+Dell MFP E514dw
+Dell MFP E515dw
+Dell MFP Laser 3115cn
+Dell Printer E310dw
+Dell V520
+Dell V720
 DesignJet 100
 DesignJet 100plus
 DesignJet 110
@@ -590,16 +861,26 @@ DeskJet 1600C
 DeskJet 1600CM
 DocuColor 2006
 DocuPrint
+DocuPrint 2010
+DocuPrint 204A
 DocuPrint C20
 DocuPrint C55
+DocuPrint M115
+DocuPrint M118
+DocuPrint M225
+DocuPrint M265
+DocuPrint M268
 DocuPrint N17
 DocuPrint N24
 DocuPrint N32
 DocuPrint N40
 DocuPrint N4512
 DocuPrint N4512PS
+DocuPrint P115
 DocuPrint P12
 DocuPrint P1202
+DocuPrint P225
+DocuPrint P265
 DSc224
 DSc232
 DSc328
@@ -698,11 +979,11 @@ FaxCentre 2218
 FS-1000
 FS-1000+
 FS-1010
-FS-1018MFP
+FS-1018
 FS-1020D
 FS-1030D
 FS-1050
-FS-1118MFP
+FS-1118
 FS-1200
 FS-1600
 FS-1600+
@@ -729,7 +1010,6 @@ FS-4000DN
 FS-5800C
 FS-5900C
 FS-600
-FS-600 (KPDL-2)
 FS-6020
 FS-6026
 FS-6300
@@ -767,6 +1047,16 @@ FS-C8008N
 FS-C8026N
 FS-C8100DN
 FS-C8100DN+ KPDL
+FX DocuPrint 2010
+FX DocuPrint 204A
+FX DocuPrint M115
+FX DocuPrint M118
+FX DocuPrint M225
+FX DocuPrint M265
+FX DocuPrint M268
+FX DocuPrint P115
+FX DocuPrint P225
+FX DocuPrint P265
 GL-1010
 GL-1020
 GWD2004
@@ -778,88 +1068,19 @@ GX 3050SFN
 GX 5050N
 GX E3350N
 GX E5550N
-Hewlett-Packard Business Inkjet 2200
-Hewlett-Packard Business Inkjet 2230
-Hewlett-Packard Business Inkjet 2250
-Hewlett-Packard Business Inkjet 2280
-Hewlett-Packard Business Inkjet 2300
-Hewlett-Packard Business Inkjet 2800
-Hewlett-Packard color LaserJet 2550 series
-Hewlett-Packard Color LaserJet 2605 series
-Hewlett-Packard Color LaserJet 2700 series
-Hewlett-Packard Color LaserJet 2800 series
-Hewlett-Packard color LaserJet 3500
-Hewlett-Packard color LaserJet 3550
-Hewlett-Packard Color LaserJet 4550
-Hewlett-Packard color LaserJet 4600
-Hewlett-Packard Color LaserJet CM1015 series
-Hewlett-Packard Color LaserJet CM1017 series
-Hewlett-Packard LaserJet 1010
-Hewlett-Packard LaserJet 1150
-Hewlett-Packard LaserJet 1160 series
-Hewlett-Packard LaserJet 1200
-Hewlett-Packard LaserJet 1220
-Hewlett-Packard LaserJet 1300
-Hewlett-Packard LaserJet 1320 series
-Hewlett-Packard LaserJet 2100 Series
-Hewlett-Packard LaserJet 2200
-Hewlett-Packard LaserJet 2300L
-Hewlett-Packard LaserJet 2300 series
-Hewlett-Packard LaserJet 2420
-Hewlett-Packard LaserJet 2430
-Hewlett-Packard LaserJet 3015
-Hewlett-Packard LaserJet 3020
-Hewlett-Packard LaserJet 3030
-Hewlett-Packard LaserJet 3050
-Hewlett-Packard LaserJet 3052
-Hewlett-Packard LaserJet 3055
-Hewlett-Packard LaserJet 3200
-Hewlett-Packard LaserJet 3200M
-Hewlett-Packard LaserJet 3300/3310/3320
-Hewlett-Packard LaserJet 3330
-Hewlett-Packard LaserJet 3380
-Hewlett-Packard LaserJet 3390
-Hewlett-Packard LaserJet 4000 Series
-Hewlett-Packard LaserJet 4050 Series
-Hewlett-Packard LaserJet 4050 Series INTERFACE=7/1/1
-Hewlett-Packard LaserJet 4100 Series
-Hewlett-Packard LaserJet 4200
-Hewlett-Packard LaserJet 4250
-Hewlett-Packard LaserJet 5000 Series
-Hewlett-Packard LaserJet 5L Printer
-Hewlett-Packard LaserJet 5MP Printer
-Hewlett-Packard LaserJet 5P Printer
-Hewlett-Packard LaserJet 6L Printer
-Hewlett-Packard LaserJet 6MP Printer
-Hewlett-Packard LaserJet 6P Printer
-Hewlett-Packard LaserJet 8150 Series
-Hewlett-Packard LaserJet M2727
-Hewlett-Packard LaserJet P2010 series
-Hewlett-Packard LaserJet P2015 series
-Hewlett-Packard LaserJet P3004 Series
-Hewlett-Packard LaserJet P3005 Series
-Hewlett-Packard OfficeJet Pro 1150C
-Hewlett-Packard OfficeJet Pro 1170C Series
 HL-1020
 HL-1030
 HL-1040
 HL-1050
-HL-1050 series
 HL-1070
-HL-1070 series
+HL-1210W
 HL-1230
-HL-1230 series
 HL-1240
-HL-1240 series
 HL-1250
-HL-1250 series
 HL-1260
 HL-1430
-HL-1430 series
 HL-1440
-HL-1440 series
 HL-1450
-HL-1450 series
 HL-1470N
 HL-1650
 HL-1650/70N
@@ -868,94 +1089,139 @@ HL-1850
 HL-1850/70N
 HL-1870N
 HL-2030
-HL-2030 series
 HL-2035
 HL-2040
-HL-2040 series
 HL-2060
 HL-2070N
+HL-2130
 HL-2140
-HL-2140 series
+HL-2170W
+HL-2250DN
+HL-2270DW
+HL-2280DW
 HL-2400CeN
 HL-2460
 HL-2460N
 HL-2600CN
 HL-2700CN
+HL-3040CN
+HL-3045CN
 HL-3070CW
+HL-3075CW
+HL-3140CW
+HL-3150CDN
+HL-3150CDW
+HL-3170CDW
+HL-3172CDW
 HL-3260N
 HL-3400CN
 HL-3450CN
 HL-4000CN
+HL-4040CDN
+HL-4040CN
 HL-4050CDN
 HL-4070CDW
+HL-4140CN
+HL-4150CDN
+HL-4570CDW
 HL-5030
 HL-5040
-HL-5040 series
 HL-5050
-HL-5050 series
 HL-5070N
 HL-5140
-HL-5140 series
 HL-5150D
 HL-5170DN
 HL-5240
 HL-5250DN
-HL-5250DN series
 HL-5270DN
+HL-5280DW
 HL-5350DN
 HL-5370DW
 HL-5380DN
+HL-5450DN
+HL-5470DW
 HL-6050
+HL-6050D_DN
 HL-6050D/DN
+HL-6180DW
 HL-7050
 HL-7050N
 HL-720
 HL-730
 HL-8050N
 HL-820
-HP BUSINESS INKJET 2200
-HP BUSINESS INKJET 2230
-HP BUSINESS INKJET 2250
-HP BUSINESS INKJET 2280
-HP BUSINESS INKJET 2300
-HP BUSINESS INKJET 2800
-hp color LaserJet 2500
-hp color LaserJet 2550 series
+HL-L2305
+HL-L2340D
+HL-L2360D
+HL-L2380DW
+HL-L5100DN
+HL-L5200DW
+HL-L6200DW
+HL-L6300DW
+HL-L6400DW
+HL-L8250CDN
+HL-L8350CDW
+HL-L9200CDW
+HL-S7000DN
+HP 9200C Digital Sender
+HP 9250C Digital Sender
+HP Business Inkjet 2200
+HP Business Inkjet 2230
+HP Business Inkjet 2250
+HP Business Inkjet 2280
+HP Business Inkjet 2300
+HP Business Inkjet 2800
+HP Color LaserJet 2500
+HP Color LaserJet 2550
 HP Color LaserJet 2605
 HP Color LaserJet 2605dn
-HP Color LaserJet 2700 series
-hp color LaserJet 2800 series
-hp color LaserJet 3500
-hp color LaserJet 3550
-hp color LaserJet 3700
+HP Color LaserJet 2700
+HP Color LaserJet 2800
+HP Color LaserJet 3000
+HP Color LaserJet 3500
+HP Color LaserJet 3550
+HP Color LaserJet 3700
 HP Color LaserJet 3800
 HP Color LaserJet 4550
-hp color LaserJet 4600
-hp color LaserJet 4650
+HP Color LaserJet 4600
+HP Color LaserJet 4650
 HP Color LaserJet 4700
-hp color LaserJet 5550
-HP Color LaserJet CM1015 Series
-HP Color LaserJet CM1017 Series
-HP Color LaserJet CM4730 MFP
-hp LaserJet 1010
-hp LaserJet 1015
+HP Color LaserJet 4730
+HP Color LaserJet 5500
+HP Color LaserJet 5550
+HP Color LaserJet CM1015
+HP Color LaserJet CM1017
+HP Color LaserJet CM3530
+HP Color LaserJet CM4730
+HP Color LaserJet CM6030
+HP Color LaserJet CM6040
+HP Color LaserJet CMSerie 6040
+HP Color LaserJet CP3505
+HP Color LaserJet CP3525
+HP Color LaserJet CP4005
+HP Color LaserJet CP4020
+HP Color LaserJet CP4025
+HP Color LaserJet CP4520
+HP Color LaserJet CP4525
+HP Color LaserJet CP6015
+HP Color LaserJet M553
+HP LaserJet 1010
+HP LaserJet 1015
 HP LaserJet 1100
-HP LaserJet 1100A Printer-Copier-Scanner
-HP LaserJet 1100 Printer
-hp LaserJet 1150
-hp LaserJet 1160 series
+HP LaserJet 1150
+HP LaserJet 1160
 HP LaserJet 1200
 HP LaserJet 1220
-hp LaserJet 1300
-hp LaserJet 1320 series
-HP LaserJet 2100 Series
+HP LaserJet 1300
+HP LaserJet 1320
+HP LaserJet 2100
 HP LaserJet 2200
-hp LaserJet 2300L
-hp LaserJet 2300 series
-hp LaserJet 2420
-hp LaserJet 2430
+HP LaserJet 2300
+HP LaserJet 2300L
+HP LaserJet 2420
+HP LaserJet 2430
 HP LaserJet 3015
-hp LaserJet 3020
+HP LaserJet 3020
 HP LaserJet 3030
 HP LaserJet 3050
 HP LaserJet 3052
@@ -966,17 +1232,21 @@ HP LaserJet 3300/3310/3320
 HP LaserJet 3330
 HP LaserJet 3380
 HP LaserJet 3390
-HP LaserJet 4000 Series
-HP LaserJet 4050 Series
-HP LaserJet 4100 Series
-hp LaserJet 4200
-hp LaserJet 4250
-hp LaserJet 4300
-hp LaserJet 4345 mfp
-hp LaserJet 4350
+HP LaserJet 4000
+HP LaserJet 400 M401dn
+HP LaserJet 4050
+HP LaserJet 4100
+HP LaserJet 4200
+HP LaserJet 4240
+HP LaserJet 4250
+HP LaserJet 4300
+HP LaserJet 4345
+HP LaserJet 4350
 HP LaserJet 4 Plus
-HP LaserJet 5000 Series
-HP LaserJet 5100 Series
+HP LaserJet 5000
+HP LaserJet 5100
+HP LaserJet 5200
+HP LaserJet 5200LX
 HP LaserJet 5L
 HP LaserJet 5MP
 HP LaserJet 5P
@@ -984,21 +1254,53 @@ HP LaserJet 5Si
 HP LaserJet 6L
 HP LaserJet 6MP
 HP LaserJet 6P
-HP LaserJet 8000 Series
-HP LaserJet 8150 Series
+HP LaserJet 8000
+HP LaserJet 8150
+HP LaserJet 9040
+HP LaserJet 9050
+HP LaserJet CM1415fn
+HP LaserJet CP 1025nw
+HP LaserJet CP1025nw
 HP LaserJet M2727
-HP LaserJet M3027 MFP
-HP LaserJet M3035 MFP
-HP LaserJet M4345 MFP
-HP LaserJet M5025 MFP
-HP LaserJet M5035 MFP
-HP LaserJet P2010 series
-HP LaserJet P2015 Series
+HP LaserJet M3027
+HP LaserJet M3035
+HP LaserJet M402n
+HP LaserJet M4345
+HP LaserJet M5025
+HP LaserJet M5035
+HP LaserJet M506
+HP LaserJet M605
+HP LaserJet MFP M426fdn
+HP LaserJet P2010
+HP LaserJet P2015
+HP LaserJet P2035
 HP LaserJet P2055d
 HP LaserJet P2055dn
-HP LaserJet P3004 Series
+HP LaserJet P3004
 HP LaserJet P3005
+HP LaserJet P3010
+HP LaserJet P3015
+HP LaserJet P4014
+HP LaserJet P4015
+HP LaserJet P4515
+HP LaserJet Professional M1212nf
+HP LaserJet Professional M1213nf
+HP LaserJet Professional M1216nfh
+HP LaserJet Professional M1217nfw
+HP LaserJet Professional P1102w
+HP LaserJet Professional P1606dn
+HP OfficeJet Pro 1150C
+HP OfficeJet Pro 1170C
+HP OfficeJet Pro X476dw
 IBM 3112 Page Printer
+IBM Infoprint 1125
+IBM Infoprint 1226
+IBM Infoprint 1332
+IBM Infoprint 1352
+IBM Infoprint 1532
+IBM Infoprint 1552
+IBM Infoprint 1572
+IBM Infoprint 1585
 IBM LaserPrinter 4039 plus
 imageRunner 3225
 Infoprint
@@ -1012,7 +1314,7 @@ IPC2838
 IPC 3030DN
 IPC 3535
 IPC 4040DN
-iR3225 (UFR II)
+iR3225
 IS 2015
 IS 2018
 IS 2018D
@@ -1110,6 +1412,9 @@ KM-C3232E KPDL
 KM-C4035E KPDL
 KM-C830
 KM-C850
+KONICA MINOLTA bizhub 20
+KONICA MINOLTA bizhub 20P
+KONICA MINOLTA bizhub 3320
 KONICA MINOLTA magicolor 2480 MF
 KONICA MINOLTA magicolor 2490 MF
 KONICA MINOLTA magicolor 2530 DL
@@ -1130,7 +1435,7 @@ Kyocera FS-1000+
 Kyocera FS-1010
 Kyocera FS-1030D
 Kyocera FS-1050
-Kyocera FS-1118MFP
+Kyocera FS-1118
 Kyocera FS-1200
 Kyocera FS-1600
 Kyocera FS-1600+
@@ -1200,7 +1505,7 @@ Kyocera Mita Ci-1100
 Kyocera Mita CS-1815
 Kyocera Mita FS-1000+
 Kyocera Mita FS-1010
-Kyocera Mita FS-1018MFP
+Kyocera Mita FS-1018
 Kyocera Mita FS-1050
 Kyocera Mita FS-1800
 Kyocera Mita FS-1800+
@@ -1263,11 +1568,11 @@ LaserJet 3055
 LaserJet 3200
 LaserJet 3200m
 LaserJet 3200se
-LaserJet 3300 MFP
-LaserJet 3310 MFP
-LaserJet 3320 MFP
-LaserJet 3320N MFP
-LaserJet 3330 MFP
+LaserJet 3300
+LaserJet 3310
+LaserJet 3320
+LaserJet 3320N
+LaserJet 3330
 LaserJet 3380
 LaserJet 3390
 LaserJet 3392
@@ -1279,7 +1584,7 @@ LaserJet 4200
 LaserJet 4240
 LaserJet 4250
 LaserJet 4300
-LaserJet 4345 MFP
+LaserJet 4345
 LaserJet 4350
 LaserJet 4L
 LaserJet 4M
@@ -1306,20 +1611,17 @@ LaserJet 8000
 LaserJet 8100
 LaserJet 8150
 LaserJet 9000
-LaserJet 9000 MFP
 LaserJet 9040
-LaserJet 9040 MFP
 LaserJet 9050
-LaserJet 9050 MFP
-LaserJet 9055 MFP
-LaserJet 9065 MFP
+LaserJet 9055
+LaserJet 9065
 LaserJet Color 4500
 LaserJet M2727
-LaserJet M3027 MFP
-LaserJet M3035 MFP
-LaserJet M4345 MFP
-LaserJet M5025 MFP
-LaserJet M5035 MFP
+LaserJet M3027
+LaserJet M3035
+LaserJet M4345
+LaserJet M5025
+LaserJet M5035
 LaserJet P2010
 LaserJet P2015
 LaserJet P2055d
@@ -1329,7 +1631,7 @@ LaserJet P3005
 Laser Printer 3000cn
 Laser Printer 3100cn
 Laser Pro LL
- Laser Pro LL2 1
+Laser Pro LL2 1
 LBP-1000
 LBP-460
 LC155
@@ -1375,18 +1677,85 @@ LD335c
 LD345c
 LD 620C
 LD 625C
+Lenovo LJ2650DN
+Lenovo LJ2655DN
+Lenovo LJ3650DN
+Lenovo LJ3700DN
+Lenovo M7206W
+Lenovo M7650DNF
+Lexmark 117
+Lexmark 125
 Lexmark 6500e
-Lexmark C790 Series
+Lexmark C510
+Lexmark C522
+Lexmark C530
+Lexmark C532
+Lexmark C534
+Lexmark C540
+Lexmark C543
+Lexmark C544
+Lexmark C546
+Lexmark C734
+Lexmark C736
+Lexmark C746
+Lexmark C748
+Lexmark C782
+Lexmark C790
 Lexmark C792
-Lexmark C920 Series
+Lexmark C920
 Lexmark C925
+Lexmark C935
 Lexmark C950
+Lexmark CS310dn
+Lexmark CS310n
+Lexmark CS410dn
+Lexmark CS510de
+Lexmark CS720
+Lexmark CX310dn
+Lexmark CX310n
+Lexmark CX410de
+Lexmark CX410e
+Lexmark CX510de
 Lexmark E120
 Lexmark E120n
 Lexmark E230
+Lexmark E240n
+Lexmark E250dn
+Lexmark E260dn
 Lexmark E321
+Lexmark E332n
 Lexmark E350d
 Lexmark E352dn
+Lexmark E360dn
+Lexmark E450dn
+Lexmark E460dn
+Lexmark E460dw
+Lexmark E462dtn
+Lexmark M1145
+Lexmark M5155
+Lexmark MS310dn
+Lexmark MS312dn
+Lexmark MS410dn
+Lexmark MS415dn
+Lexmark MS510dn
+Lexmark MS610de
+Lexmark MS610dn
+Lexmark MS710
+Lexmark MS810
+Lexmark MS811
+Lexmark MS812
+Lexmark MS911de
+Lexmark MX310dn
+Lexmark MX410de
+Lexmark MX510de
+Lexmark MX511de
+Lexmark MX511dhe
+Lexmark MX611de
+Lexmark MX611dhe
+Lexmark MX710
+Lexmark MX711
+Lexmark MX812
+Lexmark MX910de
 Lexmark OptraColor 40
 Lexmark Optra E310
 Lexmark Optra E312
@@ -1394,15 +1763,77 @@ Lexmark Optra E+ LaserPrinter
 Lexmark Optra Ep LaserPrinter
 Lexmark Optra LaserPrinter
 Lexmark Optra S 1250
+Lexmark Optra T616
+Lexmark Pro4000
+Lexmark Pro5500
+Lexmark Pro710
+Lexmark Pro910
+Lexmark S310
+Lexmark S410
+Lexmark T420
+Lexmark T430
+Lexmark T520
+Lexmark T620
+Lexmark T630
+Lexmark T632
+Lexmark T634
+Lexmark T640
+Lexmark T642
+Lexmark T644
+Lexmark T650
+Lexmark T652
+Lexmark T654
+Lexmark T656
+Lexmark W812
+Lexmark W850
+Lexmark X203n
+Lexmark X204n
+Lexmark X264dn
+Lexmark X363dn
+Lexmark X364dn
+Lexmark X463de
+Lexmark X464de
+Lexmark X466de
+Lexmark X543
+Lexmark X544
+Lexmark X546
 Lexmark X548
-Lexmark X790 Series
+Lexmark X642e
+Lexmark X644e
+Lexmark X646e
+Lexmark X652de
+Lexmark X654de
+Lexmark X656de
+Lexmark X658de
+Lexmark X734de
+Lexmark X736de
+Lexmark X738de
+Lexmark X746
+Lexmark X748
+Lexmark X790
 Lexmark X792
-Lexmark X920 Series
+Lexmark X854e
+Lexmark X860de
+Lexmark X864de
+Lexmark X920
 Lexmark X925
+Lexmark X945e
 Lexmark X950
 Lexmark X952
 Lexmark X954
+Lexmark XC2132
+Lexmark XM1140
+Lexmark XM1145
+Lexmark XM3150
+Lexmark XM5163
+Lexmark XM5170
+Lexmark XM7155
+Lexmark XM7170
 LF510/515e
+LJ2650DN
+LJ2655DN
+LJ3650DN
+LJ3700DN
 LN45
 LP 020c
 LP025/LP026
@@ -1449,6 +1880,9 @@ LW326
 LW5100
 LW7140
 M5200
+M7206W
+M7650DNF
+M7675DXF
 magicolor 2300 DL
 magicolor 2430 DL
 magicolor 2480 MF
@@ -1459,38 +1893,126 @@ magicolor 5440 DL
 mc2300DL
 mc5430DL
 mc5440DL
+MFC-1910W
 MFC-7225N
+MFC-7360N
+MFC-7362N
+MFC-7365DN
+MFC-7440N
 MFC-7450
+MFC-7460DN
 MFC-7820N
 MFC-7840N
 MFC-7840W
+MFC-7860DN
+MFC-7860DW
+MFC-7880DN
 MFC-8220
 MFC-8300
 MFC-8370DN
 MFC-8380DN
 MFC-8420
 MFC-8440
+MFC-8460N
 MFC-8480DN
+MFC-8510DN
+MFC-8512DN
+MFC-8520DN
 MFC-8600
 MFC-8640D
 MFC-8670DN
 MFC-8680DN
+MFC-8690DW
+MFC-8710DW
+MFC-8712DW
+MFC-8810DW
 MFC-8820D
 MFC-8840D
+MFC-8860DN
+MFC-8870DW
 MFC-8880DN
 MFC-8890DW
+MFC-8910DW
+MFC-8912DW
+MFC-8950DW
+MFC-8952DW
 MFC-9010CN
 MFC-9050
 MFC-9120CN
+MFC-9125CN
+MFC-9130CW
+MFC-9140CDN
+MFC-9142CDN
 MFC-9320CW
+MFC-9325CW
+MFC-9330CDW
+MFC-9332CDW
+MFC-9335CDW
+MFC-9340CDW
 MFC-9420CN
 MFC-9440CN
 MFC-9450CDN
+MFC-9460CDN
+MFC-9465CDN
+MFC-9560CDW
+MFC-9840CDW
 MFC9840CDW
+MFC-9970CDW
+MFC-J2310
+MFC-J2510
+MFC-J280W
+MFC-J285DW
+MFC-J3520
+MFC-J3720
+MFC-J425W
+MFC-J430W
+MFC-J4310DW
+MFC-J432W
+MFC-J435W
+MFC-J4510DW
+MFC-J470DW
+MFC-J4710DW
+MFC-J475DW
+MFC-J5910CDW
+MFC-J5910DW
+MFC-J625DW
+MFC-J6510DW
+MFC-J6520DW
+MFC-J6710CDW
+MFC-J6710DW
+MFC-J6720DW
+MFC-J6910DW
+MFC-J6920DW
+MFC-J6970CDW
+MFC-J825DW
+MFC-J825N
+MFC-J835DW
+MFC-J840N
+MFC-J860DN
+MFC-J870DW
+MFC-J875DW
+MFC-J955DN
+MFC-J960DN
+MFC-J980DN
+MFC-L2700DN
+MFC-L2700DW
+MFC-L2705DW
+MFC-L2720DW
+MFC-L2740DW
+MFC-L5700DN
+MFC-L5850DW
+MFC-L5900DW
+MFC-L8600CDW
+MFC-L8650CDW
+MFC-L8850CDW
+MFC-L9550CDW
 MFC-P2500
+MFP E514dw
+MFP E515dw
 MFPrinter Laser Pro LL
 MFPrinter Laser Pro LL2 1
 microLaser 210
+MICROLINE 5400
 MINOLTA-QMS magicolor 2300 DL
 MINOLTA-QMS magicolor 2430 DL
 ML-1450
@@ -1564,6 +2086,7 @@ MP 2851
 MP 2851/LD528
 MP 2852
 MP2852/DSm928
+MP 301
 MP 3010
 MP 3010/DSm730e
 MP 3010/LD330
@@ -1584,6 +2107,7 @@ MP 4000B/LD040B
 MP 4000/LD040
 MP 4001
 MP 4001/LD140
+MP 4002
 MP 4500
 MP4500/DSm745e
 MP 4500/LD345
@@ -1659,6 +2183,7 @@ MP C4501
 MP C4501A
 MPC4501A/LD645CA
 MP C4501/LD645C
+MP C4502A
 MP C5000
 MP C5000/LD550C
 MP C5501
@@ -1697,6 +2222,7 @@ MX-3501FN
 MX-3501FN PS
 MX-3501N
 MX-3501N PS
+MX-4101N
 MX-4500FN
 MX-4500FN PS
 MX-4500N
@@ -1705,6 +2231,21 @@ MX-4501FN
 MX-4501FN PS
 MX-4501N
 MX-4501N PS
+MX-C250
+MX-C300F
+MX-C300W
+MX-M200D
+MX-M260
+MX-M260N
+MX-M350N
+MX-M350U
+MX-M450N
+MX-M450U
+MX-M550N
+MX-M550U
+MX-M620N
+MX-M700N
+MX-M700U
 Oce 8445
 Oce 8465
 Oce VarioPrint 2050
@@ -1713,26 +2254,16 @@ Oce VarioPrint 2070
 Oce VarioPrint 2090 PS3
 Oce VP2105 PS3
 OfficeJet Pro 1150C
-OFFICEJET PRO 1150C
 OfficeJet Pro 1170C
-OFFICEJET PRO 1170C SERIES
 OfficeJet Pro 1175C
 OKI B410
-OKIDATA OKIPAGE 6e
-OKIDATA OKIPAGE 6e (HP4P)
-OKIDATA OKIPAGE 6ex
-OKIDATA OKIPAGE 6ex (HP4P)
-Okipage 10e
 OKIPAGE 10e
-Okipage 10ex
 OKIPAGE 10ex
-Okipage 14ex
 OKIPAGE 14ex
 OKIPAGE 14i
-Okipage 20DXn
-Okipage 6e
-Okipage 6ex
-Okipage 8p
+OKIPAGE 20DXn
+OKIPAGE 6e
+OKIPAGE 6ex
 OKIPAGE 8p
 OL410e
 Optra C710
@@ -1760,21 +2291,17 @@ Optra T616
 Optra W810
 P7026
 P7026n
-P7026N
 P7031n
 P7031nL
 P7032
 P7035n
 P7126
 P7126n
-P7126N
 P7132n
-P7132N
 P7145
 P7245
 P7325
 P7325n
-P7325N
 P7431cn
 P7527
 P7527n
@@ -1791,7 +2318,7 @@ PagePro 8L
 PaintJet XL300
 Phaser 1235
 Phaser 2135
-Phaser 3200MFP
+Phaser 3200
 Phaser 3400
 Phaser 3450
 Phaser 3500
@@ -1813,9 +2340,11 @@ Phaser 5500DT
 Phaser 5500DX
 Phaser 5500N
 Phaser 6100
+Phaser 6125N
 Phaser 6130N
 Phaser 6180DN
 Phaser 6180MFP-D
+Phaser 6180N
 Phaser 6200B
 Phaser 6200DP
 Phaser 6200DX
@@ -1825,6 +2354,8 @@ Phaser 6250DP
 Phaser 6250DT
 Phaser 6250DX
 Phaser 6250N
+Phaser 6280DN
+Phaser 6280N
 Phaser 6300DN
 Phaser 6300N
 Phaser 6350DP
@@ -1832,6 +2363,10 @@ Phaser 6350DT
 Phaser 6350DX
 Phaser 6360DN
 Phaser 6360DX
+Phaser 6500DN
+Phaser 6500N
+Phaser 6600DN
+Phaser 6600N
 Phaser 7300B
 Phaser 7300DN
 Phaser 7300DT
@@ -1842,7 +2377,7 @@ Phaser 7400DT
 Phaser 7400DX
 Phaser 7400DXF
 Phaser 7400N
-Phaser 750 Color Page Printer, PostScript 3, Letter/Legal/A4 Size
+Phaser 750
 Phaser 750DP
 Phaser 750DX
 Phaser 750N
@@ -1858,8 +2393,8 @@ Phaser 7760DN
 Phaser 7760DX
 Phaser 7760GX
 Phaser 790
+Phaser 8200
 Phaser 8200B
-Phaser 8200 Color Page Printer, PostScript Level 3,    Letter / Legal / A4 Size
 Phaser 8200DP
 Phaser 8200DX
 Phaser 8200N
@@ -1868,9 +2403,9 @@ Phaser 8400BD
 Phaser 8400DP
 Phaser 8400DX
 Phaser 8400N
+Phaser 850
 Phaser 8500DN
 Phaser 8500N
-Phaser 850 Color Page Printer, PostScript Level 3, Letter/A4 Size
 Phaser 850DP
 Phaser 850DX
 Phaser 850N
@@ -1878,13 +2413,13 @@ Phaser 8550DP
 Phaser 8550DT
 Phaser 8550DX
 Phaser 8560DN
+Phaser 860
 Phaser 860B
-Phaser 860 Color Page Printer, PostScript Level 3,    Letter / Legal / A4 Size
 Phaser 860DP
 Phaser 860DX
 Phaser 860N
 Phaser 8860
-Photosmart C309g
+PhotoSmart C309g
 PPC3073
 PPC3074
 PPC3093
@@ -1893,6 +2428,7 @@ PPC3113
 PPC3114
 PPC5115
 PPC5160
+Printer E310dw
 Pro 1106EX
 Pro 1107EX
 Pro 1356EX
@@ -1926,6 +2462,7 @@ SP 8100DN
 SP 8200DN
 SP 9100DN
 SP 9100/LP275
+SP C210SF
 SP C400DN
 SP C410DN
 SP C411DN
@@ -1942,9 +2479,9 @@ TASKalfa 250ci KPDL
 TASKalfa 300ci KPDL
 TASKalfa 400ci KPDL
 TASKalfa 500ci KPDL
-Tektronix Phaser 6200 by Xerox, Color Network Page Printer, PostScript 3, Letter/A4 Size
-Tektronix Phaser 7300 by Xerox, Color Network Page Printer, PostScript 3, Letter/A4/Tabloid/A3 Size
-Tektronix Phaser 7700 by Xerox, Color Network Page Printer, PostScript 3,Letter/A4/Tabloid/A3 Size
+Tektronix Phaser 6200
+Tektronix Phaser 7300
+Tektronix Phaser 7700
 TOSHIBA e-STUDIO165
 TOSHIBA e-STUDIO200L
 TOSHIBA e-STUDIO202L
@@ -2005,36 +2542,34 @@ Xerox Fax Center 2121_PS
 Xerox FaxCentre 2218
 Xerox Phaser 1235
 Xerox Phaser 2135
-Xerox Phaser 2135 Network Color Printer
-Xerox Phaser 3200MFP
+Xerox Phaser 3200
 Xerox Phaser 3400
 Xerox Phaser 3450
 Xerox Phaser 3500
-Xerox Phaser 4400 Laser Printer, Page Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 4500 Laser Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 4510, Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 5500 Laser Printer, PostScript 3, Letter/A4/Tabloid/A3 Size
-Xerox Phaser 6130 Color Laser Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 6180 Color Laser Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 6180MFP Color Laser Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 6250, Color Laser Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 6300, Color Laser Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 6350, Color Laser Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 6360, Color Laser Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 7400, Color Laser Printer, PostScript 3, Letter/A4/Tabloid/A3 Size
-Xerox Phaser 7750, Color Laser Printer, PostScript 3, Letter/A4/Tabloid/A3 Size
-Xerox Phaser 7760, Color Laser Printer, PostScript 3, Letter/A4/Tabloid/A3 Size
-Xerox Phaser 8400, Color Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 8500, Color Laser Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 8550, Color Laser Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 8560, Color Printer, PostScript 3, Letter/A4 Size
-Xerox Phaser 8860, Color Printer, PostScript 3, Letter/A4 Size
+Xerox Phaser 4400
+Xerox Phaser 4500
+Xerox Phaser 4510
+Xerox Phaser 5500
+Xerox Phaser 6130
+Xerox Phaser 6180
+Xerox Phaser 6250
+Xerox Phaser 6300
+Xerox Phaser 6350
+Xerox Phaser 6360
+Xerox Phaser 7400
+Xerox Phaser 7750
+Xerox Phaser 7760
+Xerox Phaser 8400
+Xerox Phaser 8500
+Xerox Phaser 8550
+Xerox Phaser 8560
+Xerox Phaser 8860
 Xerox WC 4118
 Xerox WC M20
 Xerox WC PE120
-XEROX WorkCentre 7228
-Xerox WorkCentre 7232 v  4.  7.  0 Multifunction System
-Xerox WorkCentre C2424, Color Printer, PostScript 3, Letter/A4 Size
-XEROX WorkCentre M118
-XEROX WorkCentre Pro 128
-XEROX WorkCentre Pro 133
+Xerox WorkCentre 7228
+Xerox WorkCentre 7232
+Xerox WorkCentre C2424
+Xerox WorkCentre M118
+Xerox WorkCentre Pro 128
+Xerox WorkCentre Pro 133
