@@ -8,9 +8,9 @@ from helper import output, item
 
 # third party modules
 try:
-  from snimpy.manager import Manager, load
+  from pysnmp.entity.rfc3413.oneliner import cmdgen
 except ImportError:
-  output().warning("Please install the 'snimpy' module for SNMP support.")
+  output().warning("Please install the 'pysnmp' module for SNMP support.")
 
 class capabilities():
   # set defaults
@@ -35,9 +35,9 @@ class capabilities():
     # skip this in unsafe mode
     if not args.safe: return
     # set printer language
-    if args.mode == 'ps': lang = "PostScript"
-    if args.mode == 'pjl': lang = "PJL"
-    if args.mode == 'pcl': lang = "PCL"
+    if args.mode == 'ps': lang = ["PS", "PostScript", "BR-Script", "KPDL"]
+    if args.mode == 'pjl': lang = ["PJL"]
+    if args.mode == 'pcl': lang = ["PCL"]
     # get list of PostScript/PJL/PCL capable printers
     self.models = self.get_models(args.mode + ".dat")
     # try to get printer capabilities via IPP/SNMP/HTTP
@@ -45,7 +45,7 @@ class capabilities():
     if not self.support: self.http(args.target)
     if not self.support: self.snmp(args.target, lang)
     # feedback on PostScript/PJL/PCL support
-    self.feedback(self.support, lang)
+    self.feedback(self.support, lang[0])
     # in safe mode, exit if unsupported
     if args.safe and not self.support:
       print(os.linesep + "Quitting as we are in safe mode.")
@@ -64,12 +64,11 @@ class capabilities():
       request  = urllib2.Request("http://" + host + ":631/",
                  data=body, headers={'Content-type': 'application/ipp'})
       response = urllib2.urlopen(request, timeout=self.timeout).read()
-      model = re.findall("MDL:(.+?);", response) # e.g. MDL:hp LaserJet 4250
-      langs = re.findall("CMD:(.+?);", response) # e.g. CMD:PCL,PJL,POSTSCRIPT
       # get name of device
-      model = item(model)
+      model = item(re.findall("MDL:(.+?);", response)) # e.g. MDL:hp LaserJet 4250
       # get language support
-      self.support = re.findall(lang, item(langs), re.I)
+      langs = item(re.findall("CMD:(.+?);", response)) # e.g. CMD:PCL,PJL,POSTSCRIPT
+      self.support = filter(None, [re.findall(re.escape(pdl), langs, re.I) for pdl in lang])
       self.set_support(model)
       output().green("found")
     except Exception as e:
@@ -97,23 +96,29 @@ class capabilities():
   def snmp(self, host, lang):
     try:
       sys.stdout.write("Checking for SNMP support:        ")
-      # load MIBs
-      load(self.rundir + "mibs" + os.path.sep + "SNMPv2-MIB")
-      load(self.rundir + "mibs" + os.path.sep + "Printer-MIB")
-      load(self.rundir + "mibs" + os.path.sep + "HOST-RESOURCES-MIB")
-      # create snimpy manager
-      m = Manager(host, timeout=float(self.timeout)/4)
-      descr = m.hrDeviceDescr.items()
+      # query device description and supported languages
+      desc, desc_oid = [], '1.3.6.1.2.1.25.3.2.1.3'    # HOST-RESOURCES-MIB → hrDeviceDescr
+      pdls, pdls_oid = [], '1.3.6.1.2.1.43.15.1.1.5.1' # Printer-MIB → prtInterpreterDescription
+      error, error_status, idx, binds = cmdgen.CommandGenerator().nextCmd(
+        cmdgen.CommunityData('public', mpModel=0), cmdgen.UdpTransportTarget(
+          (host, 161), timeout=self.timeout, retries=0), desc_oid, pdls_oid)
+      # exit on error
+      if error: raise Exception(error)
+      if error_status: raise Exception(error_status.prettyPrint())
+      # parse response
+      for row in binds:
+        for key, val in row:
+          if desc_oid in str(key): desc.append(str(val))
+          if pdls_oid in str(key): pdls.append(str(val))
       # get name of device
-      model = item(descr)[1] if len(descr) > 1 else None
+      model = item(desc)
       # get language support
-      langs = ','.join(m.prtInterpreterDescription.values())
-      self.support = re.findall(lang, langs, re.I)
+      langs = ','.join(pdls)
+      self.support = filter(None, [re.findall(re.escape(pdl), langs, re.I) for pdl in lang])
       self.set_support(model)
       output().green("found")
     except Exception as e:
       output().errmsg("not found", str(e))
-
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # feedback on language support
   def feedback(self, support, lang):
@@ -124,7 +129,7 @@ class capabilities():
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # set language support
   def set_support(self, model):
-    model_stripped = re.sub(r'(\d|\s|-)[a-zA-Z]+$', '', model)
+    ### model_stripped = re.sub(r'(\d|\s|-)[a-zA-Z]+$', '', model)
     '''
     ┌───────────────────────────────────────────────────────┐
     │ Experimental -- This might introduce false positives! │
@@ -134,17 +139,14 @@ class capabilities():
     │ 'd' (duplex), 't' (tray), 'c' (color), 'n' (network). │
     └───────────────────────────────────────────────────────┘
     '''
-    if model in self.models or model_stripped in self.models:
-      self.support = True
+    self.support = filter(None, [re.findall(re.escape(m), model, re.I) for m in self.models])
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # open database of supported devices
   def get_models(self, file):
-    models = []
     try:
-      f = open(self.rundir + "db" + os.path.sep + file, 'r')
-      for item in f.readlines():
-        models.append(item.strip())
+      with open(self.rundir + "db" + os.path.sep + file, 'r') as f:
+        models = filter(None, (line.strip() for line in f))
       f.close()
       return models
     except IOError as e:

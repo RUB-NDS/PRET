@@ -404,6 +404,7 @@ bizhub 1050e
 bizhub 1050eP
 bizhub 1050P
 bizhub 20
+bizhub 20P
 bizhub 360
 bizhub 420
 bizhub 500
@@ -741,6 +742,7 @@ CLP-650N
 CLP-660N
 CLP-660ND
 CLP831
+CLX-3300
 CLX-4190
 cm2510
 cm2520
@@ -1087,6 +1089,7 @@ FS-C5020N
 FS-C5025N
 FS-C5030N
 FS-C5100DN KPDL
+FS-C5200DN
 FS-C5200DN KPDL
 FS-C5300DN KPDL
 FS-C5350DN KPDL
@@ -1204,6 +1207,7 @@ HP Color LaserJet CM4730
 HP Color LaserJet CM6030
 HP Color LaserJet CM6040
 HP Color LaserJet CMSerie 6040
+HP Color LaserJet CP1515n
 HP Color LaserJet CP3505
 HP Color LaserJet CP3525
 HP Color LaserJet CP4005
@@ -1242,8 +1246,10 @@ HP LaserJet 4000
 HP LaserJet 400 M401dn
 HP LaserJet 4050
 HP LaserJet 4100
+hp LaserJet 4200
 HP LaserJet 4200
 HP LaserJet 4240
+hp LaserJet 4250
 HP LaserJet 4250
 HP LaserJet 4300
 HP LaserJet 4345
@@ -1263,6 +1269,7 @@ HP LaserJet 9040
 HP LaserJet 9050
 HP LaserJet CM1415fn
 HP LaserJet M2727
+HP LaserJet M2727nf
 HP LaserJet M3027
 HP LaserJet M3035
 HP LaserJet M402n
@@ -1929,6 +1936,7 @@ M7650DNF
 M7675DXF
 magicolor 2+
 magicolor 3100
+MC342
 MFC-7225N
 MFC-7450
 MFC-7820N

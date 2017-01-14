@@ -3,29 +3,30 @@
 # python standard library
 from __future__ import print_function
 from socket import socket
-import sys, re, os, stat, time, math
+import sys, os, re, stat, math, time, datetime
 
 # third party modules
 try:
   from colorama import Fore, Back, Style
 except ImportError:
-  msg = "Please install the 'colorama' module for ANSI output."
+  msg = "Please install the 'colorama' module for color support."
   # poor man's colored output (ANSI)
   class Back():
-    BLUE       = '\x1b[44m'
-    CYAN       = '\x1b[46m'
-    GREEN      = '\x1b[42m'
-    MAGENTA    = '\x1b[45m'
-    RED        = '\x1b[41m'
+    BLUE      = '\x1b[44m' if os.name == 'posix' else ''
+    CYAN      = '\x1b[46m' if os.name == 'posix' else ''
+    GREEN     = '\x1b[42m' if os.name == 'posix' else ''
+    MAGENTA   = '\x1b[45m' if os.name == 'posix' else ''
+    RED       = '\x1b[41m' if os.name == 'posix' else ''
   class Fore():
-    BLUE       = '\x1b[34m'
-    CYAN       = '\x1b[36m'
-    MAGENTA    = '\x1b[35m'
-    YELLOW     = '\x1b[33m'
+    BLUE      = '\x1b[34m' if os.name == 'posix' else ''
+    CYAN      = '\x1b[36m' if os.name == 'posix' else ''
+    MAGENTA   = '\x1b[35m' if os.name == 'posix' else ''
+    YELLOW    = '\x1b[33m' if os.name == 'posix' else ''
   class Style():
-    BRIGHT    = '\x1b[1m'
-    DIM       = '\x1b[2m'
-    RESET_ALL = '\x1b[0m'
+    DIM       = '\x1b[2m'  if os.name == 'posix' else ''
+    BRIGHT    = '\x1b[1m'  if os.name == 'posix' else ''
+    RESET_ALL = '\x1b[0m'  if os.name == 'posix' else ''
+    NORMAL    = '\x1b[22m' if os.name == 'posix' else ''
   print(Back.RED + msg + Style.RESET_ALL)
 
 # ----------------------------------------------------------------------
@@ -112,6 +113,21 @@ class output():
     if info: info = Style.RESET_ALL + Style.DIM + " (" + info + ")" + Style.RESET_ALL
     if msg: print(Back.RED + msg + info)
 
+  # show printer and status
+  def discover(self, (ipaddr, (device, uptime, status, prstat))):
+    ipaddr = output().strfit(ipaddr, 15)
+    device = output().strfit(device, 27)
+    uptime = output().strfit(uptime,  8)
+    status = output().strfit(status, 23)
+    if device.strip() != 'device': device = Style.BRIGHT + device + Style.NORMAL
+    if prstat == '1': status = Back.GREEN  + status + Back.BLUE # unknown
+    if prstat == '2': status = Back.GREEN  + status + Back.BLUE # running
+    if prstat == '3': status = Back.YELLOW + status + Back.BLUE # warning
+    if prstat == '4': status = Back.GREEN  + status + Back.BLUE # testing
+    if prstat == '5': status = Back.RED    + status + Back.BLUE # down
+    line = (ipaddr, device, uptime, status)
+    output().info('%-15s  %-27s  %-8s  %-23s' % line)
+
   # recursively list files
   def psfind(self, name):
     vol = Style.DIM + Fore.YELLOW + item(re.findall("^(%.*%)", name)) + Style.RESET_ALL
@@ -119,13 +135,13 @@ class output():
     print("%s %s" % (vol, name))
 
   # show directory listing
-  def psdir(self, isdir, size, atime, name, mtime):
-    mtime = Style.DIM + "(last written: " + mtime + ")" + Style.RESET_ALL
+  def psdir(self, isdir, size, mtime, name, otime):
+    otime = Style.DIM + "(created " + otime + ")" + Style.RESET_ALL 
     vol = Style.DIM + Fore.YELLOW + item(re.findall("^(%.*%)", name)) + Style.RESET_ALL
     name = re.sub("^(%.*%)", '', name) # remove volume information from filename
     name = Style.BRIGHT + Fore.BLUE + name + Style.RESET_ALL if isdir else name
-    if isdir: print("d %8s   %s %s %s %s" % (size, atime, mtime, vol, name))
-    else:     print("- %8s   %s %s %s %s" % (size, atime, mtime, vol, name))
+    if isdir: print("d %8s   %s %s %s %s" % (size, mtime, otime, vol, name))
+    else:     print("- %8s   %s %s %s %s" % (size, mtime, otime, vol, name))
 
   # show directory listing
   def pjldir(self, name, size):
@@ -154,6 +170,14 @@ class output():
       opt = opt1, opt2, opt3
       self.info("%-35s %-12s %-7s %-7s %-7s" % ((path, cmd) + opt))
 
+  # show captured jobs
+  def joblist(self, (date, size, user, name, soft)):
+    user = output().strfit(user, 13)
+    name = output().strfit(name, 22)
+    soft = output().strfit(soft, 20)
+    line = (date, size, user, name, soft)
+    output().info('%-12s %5s  %-13s  %-22s  %-20s' % line)
+
   # dump ps dictionary
   def psdict(self, data, indent=''):
     reload(sys) # workaround for non-ascii output
@@ -172,7 +196,7 @@ class output():
       if isinstance(value, dict):
         value, recursion = '', True
       # current enty is a ps array
-      if isinstance(value, list): 
+      if isinstance(value, list):
         try: # array contains only atomic values
           value = ' '.join(x['value'] for x in value)
         except: # array contains further list or dict
@@ -200,8 +224,49 @@ class output():
       print("")
 
   # show horizontal line
-  def hline(self):
-    self.info("─" * 72)
+  def hline(self, len=72):
+    self.info("─" * len)
+
+  # crop/pad string to fixed length
+  def strfit(self, str, max):
+    str = str.strip() or "-"
+    if str.startswith('(') and str.endswith(')'): str = str[1:-1]
+    # crop long strings
+    if len(str) > max:
+      str = str[0:max-1] + "…"
+    # pad short strings
+    return str.ljust(max)
+
+# ----------------------------------------------------------------------
+
+class conv():
+  # return current time
+  def now(self):
+    return int(time.time())
+
+  # return time elapsed since unix epoch
+  def elapsed(self, date, div=1, short=False):
+    date = str(datetime.timedelta(seconds=int(date)/div))
+    return date.split(",")[0] if short else date
+
+  # return date dependend on current year
+  def lsdate(self, date):
+    year1 = datetime.datetime.now().year
+    year2 = datetime.datetime.fromtimestamp(date).year
+    format = "%b %e %R" if year1 == year2 else "%b %e  %Y"
+    return time.strftime(format, time.localtime(date))
+
+  # return date plus/minus given seconds
+  def timediff(self, seconds):
+    return self.lsdate(self.now() + int(seconds) / 1000)
+
+  # convert size to human readble value
+  def filesize(self, num):
+    num = int(num)
+    for unit in ['B','K','M']:
+      if abs(num) < 1024.0:
+        return (("%4.1f%s" if unit == 'M' else "%4.0f%s") % (num, unit)) 
+      num /= 1024.0
 
 # ----------------------------------------------------------------------
 
@@ -391,6 +456,8 @@ class const(): # define constants
   PS_FLUSH    = '%%\[ Flushing: (.*)\]%%'
   PS_PROMPT   = '>' # TBD: could be derived from PS command 'prompt'
   PS_HEADER   = '@PJL ENTER LANGUAGE = POSTSCRIPT\n%!\n'
+  PS_GLOBAL   = 'true 0 startjob pop\n' # 'serverdict begin 0 exitserver'
+  PS_NOHOOK   = '/nohook true def\n'
   PS_IOHACK   = '/print {(%stdout) (w) file dup 3 2 roll writestring flushfile} def\n'\
                 '/== {128 string cvs print (\\n) print} def\n'
   PCL_HEADER  = '@PJL ENTER LANGUAGE = PCL' + EOL + ESC

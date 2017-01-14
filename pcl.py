@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 # python standard library
-import re, os, time, json, random
+import re, os, json, random
 
 # local pret classes
 from printer import printer
-from helper import log, output, item, const as c	
+from helper import log, output, conv, item, const as c	
 
 class pcl(printer):
   # --------------------------------------------------------------------
@@ -20,9 +20,9 @@ class pcl(printer):
       # write to logfile
       log().write(self.logfile, c.ESC + str_send + os.linesep)
       # sent to printer
-      self.conn.send(cmd_send)
+      self.send(cmd_send)
       # use random token as delimiter for PCL responses
-      str_recv = self.conn.recv_until('ECHO ' + token + '.*$', fb)
+      str_recv = self.recv('ECHO ' + token + '.*$', fb)
       # crop all PCL lines from received buffer
       str_recv = re.sub(r"\x0d?\x0a?\x0c?PCL.*\x0a?", '', str_recv)
       return str_recv
@@ -105,7 +105,7 @@ class pcl(printer):
       output().raw("This is a virtual pclfs. Use 'put' to upload files.")
     # list files with syntax highlighting
     for name, (id, size, date) in sorted(pclfs.items()):
-      output().pcldir(size, self.lsdate(int(date)), id, name)
+      output().pcldir(size, conv().lsdate(int(date)), id, name)
 
   # ====================================================================
 
@@ -150,7 +150,7 @@ class pcl(printer):
     self.chitchat("Using macro id #" + id)
     # retrieve and update superblock
     size = str(len(data))
-    date = str(int(time.time()))
+    date = str(conv().now())
     pclfs[path] = [id, size, date]
     self.update_superblock(pclfs)
     # save data as pcl macro on printer

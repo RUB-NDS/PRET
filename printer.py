@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 # python standard library
-import re, os, sys, cmd, glob, time, errno, random, ntpath
-import posixpath, datetime, hashlib, tempfile, subprocess
+import re, os, sys, cmd, glob, errno, random, ntpath
+import posixpath, hashlib, tempfile, subprocess
 
 # local pret classes
 from helper import log, output, file, item, conn, const as c
+from discovery import discovery
 from fuzzer import fuzzer
 
 class printer(cmd.Cmd, object):
@@ -87,8 +88,8 @@ class printer(cmd.Cmd, object):
   # code to be executed before command line is interpreted
   def precmd(self, line):
     # commands that can be run offline
-    off_cmd = ['#', '?', 'help', 'exit', 'quit', 'EOF', 'debug',
-               'mode', 'load', 'loop', 'open', 'timeout']
+    off_cmd = ['#', '?', 'help', 'exit', 'quit', 'EOF', 'timeout',
+               'mode', 'load', 'loop', 'discover', 'open', 'debug']
     # remove whitepaces
     line = line.strip()
     if line and line.split()[0] not in off_cmd:
@@ -161,6 +162,11 @@ class printer(cmd.Cmd, object):
 
   # ====================================================================
 
+  # ------------------------[ discover ]--------------------------------
+  def do_discover(self, arg):
+    "Discover local printer devices via SNMP."
+    discovery()
+
   # ------------------------[ open <target> ]---------------------------
   def do_open(self, arg, mode=""):
     "Connect to remote device:  open <target>"
@@ -189,6 +195,14 @@ class printer(cmd.Cmd, object):
       # exit if run from init function (command line)
       if mode == 'init':
         self.do_exit()
+
+  # wrapper to send data
+  def send(self, *args):
+    if self.conn: self.conn.send(*args)
+
+  # wrapper to recv data
+  def recv(self, *args):
+    return self.conn.recv_until(*args) if self.conn else ""
 
   # ------------------------[ close ]-----------------------------------
   def do_close(self, *arg):
@@ -378,7 +392,7 @@ class printer(cmd.Cmd, object):
       arg = raw_input('"Text" or file: ')
     if arg.startswith('"'): data = arg.strip('"')
     else: data = file().read(arg)
-    if data: self.conn.send(c.UEL + data + c.UEL)
+    if data: self.send(c.UEL + data + c.UEL)
 
   # ------------------------[ get <file> ]------------------------------
   def do_get(self, arg, lpath="", r=True):
@@ -535,14 +549,6 @@ class printer(cmd.Cmd, object):
     except OSError as e:
       if e.errno == errno.EEXIST and os.path.isdir(path): pass
       else: raise
-
-  # --------------------------------------------------------------------
-  # format date dependend on current year
-  def lsdate(self, date):
-    year1 = datetime.datetime.now().year
-    year2 = datetime.datetime.fromtimestamp(date).year
-    format = "%b %e %R" if year1 == year2 else "%b %e  %Y"
-    return time.strftime(format, time.localtime(date))
 
   # --------------------------------------------------------------------
   # auto-complete dirlist for local fs

@@ -343,6 +343,7 @@ B4600
 B6200
 B6300
 bizhub 20
+bizhub 20P
 Brother ADS-2500W
 Brother ADS-2600W
 Brother ADS-2600We
@@ -692,6 +693,7 @@ CLP-550
 CLP-550N
 CLP-770
 CLP831
+CLX-3300
 CLX-4190
 Color Laser 3010cn
 ColorLaser AP828
@@ -1039,6 +1041,7 @@ FS-C5020N
 FS-C5025N
 FS-C5030N
 FS-C5100DN KPDL
+FS-C5200DN
 FS-C5200DN KPDL
 FS-C5300DN KPDL
 FS-C5350DN KPDL
@@ -1196,6 +1199,7 @@ HP Color LaserJet CM4730
 HP Color LaserJet CM6030
 HP Color LaserJet CM6040
 HP Color LaserJet CMSerie 6040
+HP Color LaserJet CP1515n
 HP Color LaserJet CP3505
 HP Color LaserJet CP3525
 HP Color LaserJet CP4005
@@ -1236,8 +1240,10 @@ HP LaserJet 4000
 HP LaserJet 400 M401dn
 HP LaserJet 4050
 HP LaserJet 4100
+hp LaserJet 4200
 HP LaserJet 4200
 HP LaserJet 4240
+hp LaserJet 4250
 HP LaserJet 4250
 HP LaserJet 4300
 HP LaserJet 4345
@@ -1262,6 +1268,7 @@ HP LaserJet CM1415fn
 HP LaserJet CP 1025nw
 HP LaserJet CP1025nw
 HP LaserJet M2727
+HP LaserJet M2727nf
 HP LaserJet M3027
 HP LaserJet M3035
 HP LaserJet M402n
@@ -1891,6 +1898,7 @@ magicolor 2530 DL
 magicolor 5430 DL
 magicolor 5440 DL
 mc2300DL
+MC342
 mc5430DL
 mc5440DL
 MFC-1910W
@@ -2437,6 +2445,8 @@ Pro 906EX
 Pro 907EX
 QL-5100A
 S2500
+Samsung CLX-3300
+Samsung SCX-6x45
 SDC555
 SGC 1506
 Sharp AR-NB2

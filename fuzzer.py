@@ -5,7 +5,7 @@ class fuzzer():
   var = ["~", "$HOME"]
   win = ["%WINDIR%", "%SYSTEMROOT%", "%HOMEPATH%", "%PROGRAMFILES%"]
   smb = ["\\\\127.0.0.1\\"]
-  web = ["http://127.0.0.1/"] # "http://thelorg.org/printers"
+  web = ["http://127.0.0.1/"] # "http://hacking-printers.net/log.me"
   dir = ["..", "...", "...."] # also combinations like "./.."
 # sep = ["", "\\", "/", "\\\\", "//", "\\/"] 
   abs = [".profile", ["etc", "passwd"], ["bin", "sh"], ["bin", "ls"],

