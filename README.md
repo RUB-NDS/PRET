@@ -7,7 +7,7 @@
 
 PRET requires 3rd-party modules for colored output and SNMP support. For a quick install, use:
 
-    # pip install colorama snimpy
+    # pip install colorama pysnmp
 
 ### Usage
 
