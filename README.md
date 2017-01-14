@@ -9,6 +9,10 @@ PRET requires 3rd-party modules for colored output and SNMP support. For a quick
 
     # pip install colorama pysnmp
 
+If unicode characters are not displayed correctly on a Windoze console, try this:
+
+    # pip install win_unicode_console
+
 ### Usage
 
 ```
