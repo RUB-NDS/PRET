@@ -94,15 +94,16 @@ laserjet.lan:/> exit
 Generic commands are:
 
 ```
-help     List available commands or get detailed help with 'help cmd'.
-debug    Enter debug mode. Use 'hex' for hexdump.
-load     Run commands from file:  load cmd.txt
-loop     Run command for multiple arguments:  loop <cmd> <arg1> <arg2> …
-open     Connect to remote device:  open <target>
-close    Disconnect from device.
-timeout  Set connection timeout:  timeout <seconds>
-site     Execute custom command on printer:  site <command>
-exit     Exit the interpreter.
+help      List available commands or get detailed help with 'help cmd'.
+debug     Enter debug mode. Use 'hex' for hexdump.
+load      Run commands from file:  load cmd.txt
+loop      Run command for multiple arguments:  loop <cmd> <arg1> <arg2> …
+open      Connect to remote device:  open <target>
+close     Disconnect from device.
+timeout   Set connection timeout:  timeout <seconds>
+site      Execute custom command on printer:  site <command>
+discover  Discover local printer devices via SNMP.
+exit      Exit the interpreter.
 ```
 
 Generic (file) operations with a PS/PJL/PCL specific implementation are:
@@ -203,6 +204,7 @@ reset      Reset to factory defaults.
 selftest   Perform various printer self-tests.
 disable    Disable printing functionality.
 destroy    Cause physical damage to printer's NVRAM.
+flood      Flood user input, may reveal buffer overflows.
 
 lock       Lock control panel settings and disk write access.
 unlock     Unlock control panel settings and disk write access.
