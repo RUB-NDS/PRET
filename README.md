@@ -2,7 +2,7 @@
 
 **Is your printer secure? Check before someone else does...**
 
-The main idea of PRET is to facilitate the communication between the end-user and the printer. Thus, after entering a UNIX-like command, PRET translates it to PostScript or PJL, sends it to the printer, evaluates the result, and translates it back to a UNIX-friendly language. But of course, PRET also offers several commands useful for printer attacks and fuzzing.
+The main idea of PRET is to facilitate the communication between the end-user and the printer. Thus, after entering a UNIX-like command, PRET translates it to PostScript, PJL or PJL, sends it to the printer, evaluates the result, and translates it back to a user-friendly language. PRET offers several commands useful for printer attacks and fuzzing.
 
 ![PRET design](https://github.com/RUB-NDS/PRET/blob/master/img/architecture.png)
 
