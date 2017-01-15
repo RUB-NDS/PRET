@@ -1,5 +1,4 @@
-## PRET
-### Printer Exploitation Toolkit
+## PRET - Printer Exploitation Toolkit
 
 **Is your printer secure? Check before someone else does...**
 
@@ -46,7 +45,7 @@ optional arguments:
 
 `--load filename` reads and executes PRET commands from a text file. This is usefull for automation. Command files can also be invoked later within a PRET session via the `load` command.
 
-`--log filename` writes a copy of the raw PS/PJL/PCL datastream send to to printer into a file. This can be useful to build a malicious print job, which can be deployed to another printer not directly reachable via port 9100/tcp.
+`--log filename` writes a copy of the raw PS/PJL/PCL datastream sent to the printer into a file. This can be useful to build a malicious print job, which can be deployed to another printer not directly reachable via port 9100/tcp.
 
 ### Generic Commands
 
