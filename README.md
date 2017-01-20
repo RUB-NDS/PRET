@@ -2,17 +2,18 @@
 
 **Is your printer secure? Check before someone else does...**
 
-The main idea of PRET is to facilitate the communication between the end-user and the printer. Thus, after entering a UNIX-like command, PRET translates it to PostScript, PJL or PJL, sends it to the printer, evaluates the result, and translates it back to a user-friendly language. PRET offers several commands useful for printer attacks and fuzzing.
+
+The main idea of PRET is to facilitate the communication between the end-user and the printer. Thus, after entering a UNIX-like command, PRET translates it to PostScript, PJL or PCL, sends it to the printer, evaluates the result, and translates it back to a user-friendly language. PRET offers several commands useful for printer attacks and fuzzing.
 
 ![PRET design](https://github.com/RUB-NDS/PRET/blob/master/img/architecture.png)
 
 ### Installation
 
-PRET requires 3rd-party modules for colored output and SNMP support. For a quick install, use:
+PRET only requires a Python 2 interpreter. For colored output and SNMP support however, third party party modules need to be installed:
 
     # pip install colorama pysnmp
 
-If unicode characters are not displayed correctly on a Windoze console, try this:
+If unicode characters are not displayed correctly on a Windoze console, try installing the *win_unicode_console* module:
 
     # pip install win_unicode_console
 
@@ -41,15 +42,15 @@ optional arguments:
 
 ###### Flags and Arguments:
 
-`--safe` tries to check via IPP, HTTP and SNMP if the selected printing language (PS/PJL/PCL) is actually supported by the device before connection via port 9100/tcp. On non-networked connections (USB, parallel cable), this test will fail.
+`--safe` tries to check via IPP, HTTP and SNMP if the selected printing language (PS/PJL/PCL) is actually supported by the device before connecting via port 9100/tcp. On non-networked printers (USB, parallel cable) this test will fail.
 
-`--quit` suppresses printer model determination, intro and other chit-chat.
+`--quit` suppresses printer model determination, intro message and some other chit-chat.
 
-`--debug` shows the PS/PJL/PCL commands actually sent to the device and the feedback received. Note that header data and other overhead is filtered. The see the whole traffic, use e.g. wireshark. Debugging can also be switched on/off within a PRET session using the `debug` command 
+`--debug` shows all PS/PJL/PCL commands actually sent to the device and the feedback received. Note that header data and other overhead is filtered. The see the whole traffic, use e.g. wireshark. Debugging can also be switched on/off within a PRET session using the `debug` command 
 
 `--load filename` reads and executes PRET commands from a text file. This is usefull for automation. Command files can also be invoked later within a PRET session via the `load` command.
 
-`--log filename` writes a copy of the raw PS/PJL/PCL datastream sent to the printer into a file. This can be useful to build a malicious print job, which can be deployed to another printer not directly reachable via port 9100/tcp.
+`--log filename` writes a copy of the raw PS/PJL/PCL datastream sent to the printer into a file. This can be useful to build a malicious print job to be deployed to another printer not directly reachable via port 9100/tcp. For example, the file can be printed from USB drive.
 
 ### Generic Commands
 
