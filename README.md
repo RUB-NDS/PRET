@@ -286,7 +286,7 @@ PCL is a very limited page description language without access to the file syste
 - `postscript.py` - PS spezific code (inherits from class printer)
 - `pjl.py` - PJL spezific code (inherits from class printer)
 - `pcl.py` - PCL spezific code (inherits from class printer)
-- `helper.py` - Help functions for debugging, logging, sockets, etc.
+- `helper.py` - Help functions for output, logging, sockets, etc.
 - `codebook.py` - Static table of PJL status/error codes
 - `fuzzer.py` - Constants for file system fuzzing
 - `mibs/*` - Printer specific SNMP MIBs
