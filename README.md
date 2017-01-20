@@ -57,7 +57,7 @@ address          device                       uptime    status
 192.168.1.28     Brother MFC-7860DW           16:31:17   Sleep mode            
 ```
 
-The printer language to be abused must be one of `ps`, `pjl` or `pcl`. Not all languages are supported by every printer, so you may wan't to switch languages if you don't receive any feedback. Each printer language is mapped to a different PRET command set and has different capabilities to exploit.
+The printer language to be abused must be one of `ps`, `pjl` or `pcl`. Not all languages are supported by every printer, so you may wan't to switch languages if you don't receive any feedback. Each printer language is mapped to a different set of PRET commands and has different capabilities to exploit.
 
 ###### Optional Arguments:
 
@@ -65,11 +65,11 @@ The printer language to be abused must be one of `ps`, `pjl` or `pcl`. Not all l
 
 `--quit` suppresses printer model determination, intro message and some other chit-chat.
 
-`--debug` shows all PS/PJL/PCL commands actually sent to the device and the feedback received. Note that header data and other overhead is filtered. The see the whole traffic, use e.g. wireshark. Debugging can also be switched on/off within a PRET session using the `debug` command 
+`--debug` shows the datastream actually sent to the device and the feedback received. Note that header data and other overhead is filtered. The see the whole traffic, use wireshark. Debugging can also be switched on/off within a PRET session using the `debug` command 
 
 `--load filename` reads and executes PRET commands from a text file. This is usefull for automation. Command files can also be invoked later within a PRET session via the `load` command.
 
-`--log filename` writes a copy of the raw PS/PJL/PCL datastream sent to the printer into a file. This can be useful to build a malicious print job to be deployed on another printer not directly reachable. For example, the file can be printed from USB drive.
+`--log filename` writes a copy of the raw datastream sent to the printer into a file. This can be useful to build a malicious print job file which can be deployed on another printer not directly reachable, for example by printing it from USB drive.
 
 ### Generic Commands
 
@@ -214,7 +214,7 @@ config     Change printer settings:  config <setting>
   mirror        - Set mirror inversion.
 ```
 
-Note that not all commands are supported by every printer. Especially Brother and Kyocera devices use their own PostScript clones – Br-Script and KPDL – instead of licensing original ‘Adobe PostScript’. Such flavours of the PostScript language may not be 100% compatible, especially concerning security sensitive features like capturing print jobs. Access to the file system is supported by most printers, however usually limited to a certain, sandboxed directory.
+Not all commands are supported by every printer. Especially Brother and Kyocera devices use their own PostScript clones – Br-Script and KPDL – instead of licensing original ‘Adobe PostScript’. Such flavours of the PostScript language may not be 100% compatible, especially concerning security sensitive features like capturing print jobs. Access to the file system is supported by most printers, however usually limited to a certain, sandboxed directory.
 
 ### Commands in PJL mode
 
@@ -256,7 +256,7 @@ info       Show information:  info <category>
   info variables   - Lists printer's environment variables.
 ```
 
-Not that some commands are supported exclusively by HP printers, because other vendors have only implemented a subset of the PJL standard. This is especially true for PML based commands like `restart`or `reset`. Enabling long-term job retention via the `hold` command seems to be possible for some Epson devices only. NVRAM access via the `nvram` command is a proprietary feature of Brother printers. Limited access to the file system is supported by various HP, OKI, Konica, Xerox, Epson and Ricoh devices.
+Some commands are supported exclusively by HP printers, because other vendors have only implemented a subset of the PJL standard. This is especially true for PML based commands like `restart`or `reset`. Enabling long-term job retention via the `hold` command seems to be possible for some Epson devices only. NVRAM access via the `nvram` command is a proprietary feature of Brother printers. Limited access to the file system is supported by various HP, OKI, Konica, Xerox, Epson and Ricoh devices.
 
 ### Commands in PCL mode
 
@@ -272,7 +272,7 @@ info       Show information:  info <category>
 
 PCL is a very limited page description language without access to the file system. The `get`/`put`/`ls` commands therefore use a virtual file system based on PCL macros, implemented mostly for the hack value. This proof-of-concept shows that even a device which supports only minimalist languages like PCL can be used to store arbitrary files like copyright infringing material. Although such a file sharing service is not a security vulnerability per se, it might apply as ‘misuse of service’ depending on the corporate policy
 
-### The Files
+### File Listing
 
 - `pret.py` - Executable main program
 - `capabilities.py` - Routines to check for printer langauge support
