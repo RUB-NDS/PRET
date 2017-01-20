@@ -2,9 +2,9 @@
 
 **Is your printer secure? Check before someone else does...**
 
-PRET is a new tool for printer hacking developed in the scope of a [Master's Thesis](http://nds.rub.de/media/ei/arbeiten/2017/01/13/exploiting-printers.pdf) at Ruhr University Bochum. It connects to a device via network or USB and exploits the features of a given printer language. Currently [PostScript](https://www.adobe.com/products/postscript/pdfs/PLRM.pdf), [PJL](http://h10032.www1.hp.com/ctg/Manual/bpl13208.pdf) and [PCL](http://www.hp.com/ctg/Manual/bpl13210.pdf) are supported, which are spoken by most laser printers. This allows cool stuff like capturing or manipulating print jobs, access to the printer's file system and memory or even causing physical damage to the device. All attacks are documented in detail in the [Hacking Printers Wiki](http://hacking-printers.net/wiki/).
+PRET is a new tool for printer hacking developed in the scope of a [Master's Thesis](http://nds.rub.de/media/ei/arbeiten/2017/01/13/exploiting-printers.pdf) at Ruhr University Bochum. It connects to a device via network or USB and exploits the features of a given printer language. Currently [PostScript](https://www.adobe.com/products/postscript/pdfs/PLRM.pdf), [PJL](http://h10032.www1.hp.com/ctg/Manual/bpl13208.pdf) and [PCL](http://www.hp.com/ctg/Manual/bpl13210.pdf) are supported which are spoken by most laser printers. This allows cool stuff like capturing or manipulating print jobs, accessing the printer's file system and memory or even causing physical damage to the device. All attacks are documented in detail in the [Hacking Printers Wiki](http://hacking-printers.net/wiki/).
 
-The main idea of PRET is to facilitate the communication between the end-user and the printer. Thus, after entering a UNIX-like command, PRET translates it to PostScript, PJL or PCL, sends it to the printer, evaluates the result, and translates it back to a user-friendly format. PRET offers a whole bunch of commands useful for printer attacks and fuzzing.
+The main idea of PRET is to facilitate the communication between the end-user and the printer. Thus, after entering a UNIX-like command, PRET translates it to PostScript, PJL or PCL, sends it to the printer, evaluates the result and translates it back to a user-friendly format. PRET offers a whole bunch of commands useful for printer attacks and fuzzing.
 
 ![PRET design](img/architecture.png)
 
@@ -14,7 +14,7 @@ PRET only requires a Python2 interpreter. For colored output and SNMP support ho
 
     # pip install colorama pysnmp
 
-If unicode characters are not displayed correctly on a Windoze console, try installing the *win_unicode_console* module:
+If running on a Windoze console and unicode characters are not displayed correctly, try installing the *win_unicode_console* module:
 
     # pip install win_unicode_console
 
@@ -43,7 +43,7 @@ optional arguments:
 
 ###### Positional Arguments:
 
-PRET requires a valid target and a printer language as arguments. The target can either be the IP address/hostname of a network printer or a device like `/dev/usb/lp0` for a local USB printer. To quickly discover all network printers in your subnet using SNMP broadcast, simply run PRET without arguments:
+PRET requires a valid target and a printer language as arguments. The target can either be the IP address/hostname of a network printer (with port 9100/tcp open) or a device like `/dev/usb/lp0` for a local USB printer. To quickly discover all network printers in your subnet using SNMP broadcast, simply run PRET without arguments:
 
 ```
 ./pret.py
@@ -61,7 +61,7 @@ The printer language to be abused must be one of `ps`, `pjl` or `pcl`. Not all l
 
 ###### Optional Arguments:
 
-`--safe` tries to check via IPP, HTTP and SNMP if the selected printing language (PS/PJL/PCL) is actually supported by the device before connecting via port 9100/tcp. On non-networked printers (USB, parallel cable) this test will fail.
+`--safe` tries to check via IPP, HTTP and SNMP if the selected printing language (PS/PJL/PCL) is actually supported by the device before connecting. On non-networked printers (USB, parallel cable) this test will fail.
 
 `--quit` suppresses printer model determination, intro message and some other chit-chat.
 
@@ -69,7 +69,7 @@ The printer language to be abused must be one of `ps`, `pjl` or `pcl`. Not all l
 
 `--load filename` reads and executes PRET commands from a text file. This is usefull for automation. Command files can also be invoked later within a PRET session via the `load` command.
 
-`--log filename` writes a copy of the raw PS/PJL/PCL datastream sent to the printer into a file. This can be useful to build a malicious print job to be deployed to another printer not directly reachable via port 9100/tcp. For example, the file can be printed from USB drive.
+`--log filename` writes a copy of the raw PS/PJL/PCL datastream sent to the printer into a file. This can be useful to build a malicious print job to be deployed on another printer not directly reachable. For example, the file can be printed from USB drive.
 
 ### Generic Commands
 
@@ -214,7 +214,7 @@ config     Change printer settings:  config <setting>
   mirror        - Set mirror inversion.
 ```
 
-Note that not all commands are supported by every printer. Especially Brother and Kyocera devices use their own PostScript clones instead of licensing original ‘Adobe PostScript’: Br-Script and KPDL. Such flavours of the PostScript language are not 100% compatible, especially concerning security sensitive features like capturing print jobs. Access to the file system is supported by most printers, however usually limited to a certain, sandboxed directory and sometimes read-only.
+Note that not all commands are supported by every printer. Especially Brother and Kyocera devices use their own PostScript clones – Br-Script and KPDL – instead of licensing original ‘Adobe PostScript’. Such flavours of the PostScript language may not be 100% compatible, especially concerning security sensitive features like capturing print jobs. Access to the file system is supported by most printers, however usually limited to a certain, sandboxed directory.
 
 ### Commands in PJL mode
 
@@ -256,9 +256,7 @@ info       Show information:  info <category>
   info variables   - Lists printer's environment variables.
 ```
 
-Not that some commands are supported exclusively by HP printers, because other vendors have only implemented a subset of the PJL standard. This is especially true for PML based commands like `restart`or `reset`. Enabling long-term job retention via the `hold` command seems to be possible for some Epson devices only. NVRAM access via the `nvram` command is a proprietary feature of Brother printers.
-
-Access to the file system is supported by various HP, Xerox, Kyocera, Ricoh and Dell (which only shell rebranded devices) do partially read/write operations, however limited to a certain, sandboxed directory.
+Not that some commands are supported exclusively by HP printers, because other vendors have only implemented a subset of the PJL standard. This is especially true for PML based commands like `restart`or `reset`. Enabling long-term job retention via the `hold` command seems to be possible for some Epson devices only. NVRAM access via the `nvram` command is a proprietary feature of Brother printers. Limited access to the file system is supported by various HP, OKI, Konica, Xerox, Epson and Ricoh devices.
 
 ### Commands in PCL mode
 
@@ -289,5 +287,9 @@ PCL is a very limited page description language without access to the file syste
 - `mibs/*` - Printer specific SNMP MIBs
 - `db/*` - database of supported models
 - `lpd/*` - Scripts for LPD fuzzing
+
+### Getting Started
+
+Given the features and various proprietary extensions in printing languages like PostScript and PJL, conducting a pentest on printers is not a trivial job. PRET can help to assist and verify known issues in the language. Once you have played around with the tool, you may wan't to perform a systematic printer security analysis. A good starting point is the [Printer Security Testing Cheat Sheet](http://hacking-printers.net/wiki/index.php?title=Printer_Security_Testing_Cheat_Sheet).
 
 **Happy Printer Hacking!**
