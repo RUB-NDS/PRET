@@ -292,4 +292,4 @@ PCL is a very limited page description language without access to the file syste
 
 Given the features and various proprietary extensions in printing languages like PostScript and PJL, conducting a pentest on printers is not a trivial job. PRET can help to assist and verify known issues in the language. Once you have played around with the tool, you may wan't to perform a systematic printer security analysis. A good starting point is the [Printer Security Testing Cheat Sheet](http://hacking-printers.net/wiki/index.php?title=Printer_Security_Testing_Cheat_Sheet).
 
-**Happy Printer Hacking!**
+**Happy Hacking!**
