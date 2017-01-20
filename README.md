@@ -2,14 +2,15 @@
 
 **Is your printer secure? Check before someone else does...**
 
+PRET is a new tool for printer hacking developed in the scope of a [Master's Thesis](http://nds.rub.de/media/ei/arbeiten/2017/01/13/exploiting-printers.pdf) at Ruhr University Bochum. It connects to a device via network or USB and exploits the features of a given printer language. Currently [PostScript](https://www.adobe.com/products/postscript/pdfs/PLRM.pdf), [PJL](http://h10032.www1.hp.com/ctg/Manual/bpl13208.pdf) and [PCL](http://www.hp.com/ctg/Manual/bpl13210.pdf) are supported, which are spoken by most laser printers. This allows cool stuff like capturing or manipulating print jobs, access to the printer's file system and memory or even causing physical damage to the device. All attacks are documented in detail in the [Hacking Printers Wiki](http://hacking-printers.net/wiki/).
 
-The main idea of PRET is to facilitate the communication between the end-user and the printer. Thus, after entering a UNIX-like command, PRET translates it to PostScript, PJL or PCL, sends it to the printer, evaluates the result, and translates it back to a user-friendly language. PRET offers several commands useful for printer attacks and fuzzing.
+The main idea of PRET is to facilitate the communication between the end-user and the printer. Thus, after entering a UNIX-like command, PRET translates it to PostScript, PJL or PCL, sends it to the printer, evaluates the result, and translates it back to a user-friendly format. PRET offers a whole bunch of commands useful for printer attacks and fuzzing.
 
-![PRET design](https://github.com/RUB-NDS/PRET/blob/master/img/architecture.png)
+![PRET design](img/architecture.png)
 
 ### Installation
 
-PRET only requires a Python 2 interpreter. For colored output and SNMP support however, third party party modules need to be installed:
+PRET only requires a Python2 interpreter. For colored output and SNMP support however, third party party modules need to be installed:
 
     # pip install colorama pysnmp
 
@@ -40,7 +41,25 @@ optional arguments:
     $ ./pret.py laserjet.lan ps
     $ ./pret.py /dev/usb/lp0 pjl
 
-###### Flags and Arguments:
+###### Positional Arguments:
+
+PRET requires a valid target and a printer language as arguments. The target can either be the IP address/hostname of a network printer or a device like `/dev/usb/lp0` for a local USB printer. To quickly discover all network printers in your subnet using SNMP broadcast, simply run PRET without arguments:
+
+```
+./pret.py
+No target given, discovering local printers
+
+address          device                       uptime    status                 
+───────────────────────────────────────────────────────────────────────────────
+192.168.1.5      hp LaserJet 4250             10:21:49   Ready                 
+192.168.1.11     HP LaserJet M3027 MFP        13 days    Paper jam             
+192.168.1.27     Lexmark X792                 153 days   Ready                 
+192.168.1.28     Brother MFC-7860DW           16:31:17   Sleep mode            
+```
+
+The printer language to be abused must be one of `ps`, `pjl` or `pcl`. Not all languages are supported by every printer, so you may wan't to switch languages if you don't receive any feedback. Each printer language is mapped to a different PRET command set and has different capabilities to exploit.
+
+###### Optional Arguments:
 
 `--safe` tries to check via IPP, HTTP and SNMP if the selected printing language (PS/PJL/PCL) is actually supported by the device before connecting via port 9100/tcp. On non-networked printers (USB, parallel cable) this test will fail.
 
@@ -54,7 +73,7 @@ optional arguments:
 
 ### Generic Commands
 
-After connecting to a printer (e.g. via network or USB cable), you will see the PRET shell and can execute various commands:
+After connecting to a printer device, you will see the PRET shell and can execute various commands:
 
 ```
 $ ./pret.py laserjet.lan pjl
@@ -99,22 +118,23 @@ d        -   tmp
 laserjet.lan:/> exit
 ```
 
-Generic commands are:
+A list of generic PRET commands is given below:
 
 ```
 help      List available commands or get detailed help with 'help cmd'.
-debug     Enter debug mode. Use 'hex' for hexdump.
+debug     Enter debug mode. Use 'hex' for hexdump:  debug [hex]
 load      Run commands from file:  load cmd.txt
 loop      Run command for multiple arguments:  loop <cmd> <arg1> <arg2> …
 open      Connect to remote device:  open <target>
 close     Disconnect from device.
 timeout   Set connection timeout:  timeout <seconds>
 site      Execute custom command on printer:  site <command>
+print     Print a document or plain text:  print <file>|"text"
 discover  Discover local printer devices via SNMP.
 exit      Exit the interpreter.
 ```
 
-Generic (file) operations with a PS/PJL/PCL specific implementation are:
+Generic file system operations with a PS/PJL/PCL specific implementation are:
 
 ```
 ┌───────────┬─────┬─────┬─────┬────────────────────────────────────────┐
@@ -194,6 +214,8 @@ config     Change printer settings:  config <setting>
   mirror        - Set mirror inversion.
 ```
 
+Note that not all commands are supported by every printer. Especially Brother and Kyocera devices use their own PostScript clones instead of licensing original ‘Adobe PostScript’: Br-Script and KPDL. Such flavours of the PostScript language are not 100% compatible, especially concerning security sensitive features like capturing print jobs. Access to the file system is supported by most printers, however usually limited to a certain, sandboxed directory and sometimes read-only.
+
 ### Commands in PJL mode
 
 ```
@@ -234,7 +256,9 @@ info       Show information:  info <category>
   info variables   - Lists printer's environment variables.
 ```
 
-Not that many commands are supported exclusively by HP printers, because other vendors have only implemented a subset of the PJL standard. This is especially true for PML based commands like `restart`or `reset`. Enabling long-term job retention via the `hold` command seems to be possible for Epson devices only. NVRAM access via the `nvram` command seems to work on printers by Brother (and Konica Minolta?). Access to the file system (inclusing path traversal) seems to be supported by HP only. Xerox, Kyocera, Ricoh and Dell (which only shell rebranded devices) do partially read/write operations, however limited to a certain, sandboxed directory.
+Not that some commands are supported exclusively by HP printers, because other vendors have only implemented a subset of the PJL standard. This is especially true for PML based commands like `restart`or `reset`. Enabling long-term job retention via the `hold` command seems to be possible for some Epson devices only. NVRAM access via the `nvram` command is a proprietary feature of Brother printers.
+
+Access to the file system is supported by various HP, Xerox, Kyocera, Ricoh and Dell (which only shell rebranded devices) do partially read/write operations, however limited to a certain, sandboxed directory.
 
 ### Commands in PCL mode
 
@@ -248,21 +272,22 @@ info       Show information:  info <category>
   info extended   - Show extended fonts.
 ```
 
-PCL is a very limited page description language without access to the file system. The to get/put/ls commands therefore use on a virtual file system based on PCL macros and mostly for the hack value :)
+PCL is a very limited page description language without access to the file system. The `get`/`put`/`ls` commands therefore use a virtual file system based on PCL macros, implemented mostly for the hack value. This proof-of-concept shows that even a device which supports only minimalist languages like PCL can be used to store arbitrary files like copyright infringing material. Although such a file sharing service is not a security vulnerability per se, it might apply as ‘misuse of service’ depending on the corporate policy
 
 ### The Files
 
 - `pret.py` - Executable main program
 - `capabilities.py` - Routines to check for printer langauge support
-- `printer.py` - Generic code to describe a printer
+- `discovery.py` - Routines to list printers using SNMP broadcast
+- `printer.py` - Generic code to describe a printing device
 - `postscript.py` - PS spezific code (inherits from class printer)
 - `pjl.py` - PJL spezific code (inherits from class printer)
 - `pcl.py` - PCL spezific code (inherits from class printer)
 - `helper.py` - Help functions for output and debugging, logging, file system access, sending and recveiving via socket or character device and printer language constants
-- `codebook.py` - Static tabelle of PJL status/error codes
+- `codebook.py` - Static table of PJL status/error codes
 - `fuzzer.py` - Constants for file system fuzzing
-- `mibs/*` - Printer specific MIBs used by snimpy
+- `mibs/*` - Printer specific SNMP MIBs
 - `db/*` - database of supported models
 - `lpd/*` - Scripts for LPD fuzzing
 
-*Happy Hacking!*
+**Happy Printer Hacking!**
