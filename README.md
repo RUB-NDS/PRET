@@ -18,6 +18,10 @@ If running on a Windoze console and unicode characters are not displayed correct
 
     # pip install win_unicode_console
 
+For experimental, ‘driverless’ printing (see print command), ImageMagick and GhostScript need to be installed:
+
+    # apt-get install imagemagick ghostscript
+
 ### Usage
 
 ```
@@ -129,7 +133,8 @@ open      Connect to remote device:  open <target>
 close     Disconnect from device.
 timeout   Set connection timeout:  timeout <seconds>
 site      Execute custom command on printer:  site <command>
-print     Print a document or plain text:  print <file>|"text"
+send      Send raw data to printer:  print <file>|"text"
+print     Print image or document:  print <file>
 discover  Discover local printer devices via SNMP.
 exit      Exit the interpreter.
 ```
