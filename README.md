@@ -132,9 +132,9 @@ loop      Run command for multiple arguments:  loop <cmd> <arg1> <arg2> …
 open      Connect to remote device:  open <target>
 close     Disconnect from device.
 timeout   Set connection timeout:  timeout <seconds>
-site      Execute custom command on printer:  site <command>
-print     Print image file or raw text:  print <file>|"text"
 discover  Discover local printer devices via SNMP.
+print     Print image file or raw text:  print <file>|"text"
+site      Execute custom command on printer:  site <command>
 exit      Exit the interpreter.
 ```
 
