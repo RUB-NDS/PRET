@@ -127,7 +127,7 @@ class printer(cmd.Cmd, object):
 
   # ------------------------[ debug ]-----------------------------------
   def do_debug(self, arg):
-    "Enter debug mode. Use 'hex' for hexdump."
+    "Enter debug mode. Use 'hex' for hexdump:  debug [hex]"
     self.debug = not self.debug
     # set hex mode (= ascii + hexdump)
     if arg == 'hex': self.debug = 'hex'
@@ -151,12 +151,12 @@ class printer(cmd.Cmd, object):
   # ------------------------[ loop <cmd> <arg1> <arg2> … ]--------------
   def do_loop(self, arg):
     "Run command for multiple arguments:  loop <cmd> <arg1> <arg2> …"
-    arg = re.split("\s+", arg)
-    if len(arg) > 1:
-      cmd = arg.pop(0)
-      for item in arg:
-        output().chitchat("Executing command: '" + cmd + " " + item + "'")
-        self.onecmd(cmd + " " + item)
+    args = re.split("\s+", arg)
+    if len(args) > 1:
+      cmd = args.pop(0)
+      for arg in args:
+        output().chitchat("Executing command: '" + cmd + " " + arg + "'")
+        self.onecmd(cmd + " " + arg)
     else:
       self.onecmd("help loop")
 
@@ -385,15 +385,6 @@ class printer(cmd.Cmd, object):
 
   # ====================================================================
 
-  # ------------------------[ print <file> ]----------------------------
-  def do_print(self, arg):
-    'Send raw data to printer:  print "text"|<file>'
-    if not arg:
-      arg = raw_input('"Text" or file: ')
-    if arg.startswith('"'): data = arg.strip('"')
-    else: data = file().read(arg)
-    if data: self.send(c.UEL + data + c.UEL)
-
   # ------------------------[ get <file> ]------------------------------
   def do_get(self, arg, lpath="", r=True):
     "Receive file:  get <file>"
@@ -484,24 +475,24 @@ class printer(cmd.Cmd, object):
 
   # ------------------------[ edit <file> ]-----------------------------
   def do_edit(self, arg):
-    t = tempfile.NamedTemporaryFile()
-    lpath = t.name
+    # get name of temporary file
+    t = tempfile.NamedTemporaryFile(delete=False)
+    lpath = t.name; t.close
     # download to temporary file
     self.do_get(arg, lpath)
     # get md5sum for original file
     chksum1 = hashlib.md5(open(lpath,'rb').read()).hexdigest()
     try:
       subprocess.call([self.editor, lpath])
+      # get md5sum for edited file
+      chksum2 = hashlib.md5(open(lpath,'rb').read()).hexdigest()
+      # upload file, if changed
+      if chksum1 == chksum2: print("File not changed.")
+      else: self.do_put(lpath, arg)
     except Exception as e:
       output().errmsg("Cannot edit file - Set self.editor", str(e))
-      return
-    # get md5sum for edited file
-    chksum2 = hashlib.md5(open(lpath,'rb').read()).hexdigest()
-    # upload file, if changed
-    if chksum1 == chksum2:
-      print("File not changed.")
-    else:
-      self.do_put(lpath, arg)
+    # delete temporary file
+    os.remove(lpath)
 
   # define alias but do not show alias in help
   do_vim = do_edit
@@ -570,6 +561,7 @@ class printer(cmd.Cmd, object):
 
   # define alias
   complete_load  = complete_lfiles # files or directories
+  complete_send  = complete_lfiles # files or directories
   complete_print = complete_lfiles # files or directories
   complete_put   = complete_lfiles # files or directories
 
@@ -727,3 +719,31 @@ class printer(cmd.Cmd, object):
       arg = raw_input("Command: ")
     str_recv = self.cmd(arg)
     output().info(str_recv)
+
+  # ------------------------[ print <file>|"text" ]----------------------------
+  def do_print(self, arg):
+    'Print image file or raw text:  print <file>|"text"'
+    '''
+    ┌──────────────────────────────────────────────────────────┐
+    │ Poor man's driverless PCL based printing (experimental)  │
+    ├──────────────────────────────────────────────────────────┤
+    │ Warning: ImageMagick and Ghostscript are used to convert │
+    │ the document to be printed into a language understood be │
+    │ the printer. Don't print anything from untrusted sources │
+    │ as it may be a security risk (CVE-2016–3714, 2016-7976). │
+    └──────────────────────────────────────────────────────────┘
+    '''
+    if not arg: arg = raw_input('File or "text": ')
+    if arg.startswith('"'): data = arg.strip('"')     # raw text string
+    elif arg.endswith('.ps'): data = file().read(arg) # postscript file
+    else:                                             # anything else…
+      try:
+        self.chitchat("Converting '" + arg + "' to PCL")
+        pdf = ['-density', '300'] if arg.endswith('.pdf') else []
+        cmd = ['convert'] + pdf + [arg, '-quality', '100', 'pcl' + ':-']
+        out, err = subprocess.PIPE, subprocess.PIPE
+        p = subprocess.Popen(cmd, stdout=out, stderr=err)
+        data, stderr = p.communicate()
+      except: stderr = "ImageMagick or Ghostscript missing"
+      if stderr: output().errmsg("Cannot convert", item(stderr.splitlines()))
+    if data: self.send(c.UEL + data + c.UEL) # send pcl datastream to printer

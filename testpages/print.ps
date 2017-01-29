@@ -1,0 +1,58 @@
+%!PS-Adobe-2.0 EPSF-2.0
+%%Title: version = 1.03 of testprinter.ps 2005 May 18
+%%Creator: Tom Schneider, toms@ncifcrf.gov
+%%BoundingBox:   100   300   500   700
+%%Pages: (atend)
+%%DocumentFonts:
+%%EndComments
+
+%%EndProlog
+
+%%Page: 1 1
+
+/Times-Roman findfont 30 scalefont setfont
+
+/steps 16 def
+/hue 0 def
+/huestep 1 steps div def
+/angle 360 steps div def
+
+/changecolor {
+
+/hue hue huestep add dup 1 gt {pop 0} if def
+hue
+1.0
+1.0
+sethsbcolor
+} def
+
+/square
+{newpath
+angle rotate
+changecolor
+0 0 moveto
+90 0 lineto
+90 90 lineto
+0 90 lineto
+closepath stroke
+6 92 moveto
+(printer) show } def
+
+/circlesymbol {
+newpath 0 360 arc closepath} bind def
+
+300 500 translate
+
+/size 15 def
+15 {
+/size size 1 sub def
+size 15 div setgray
+0 0 size 10 mul circlesymbol stroke
+} repeat
+
+steps {square} repeat
+
+showpage
+
+%%Trailer
+%%Pages: 1

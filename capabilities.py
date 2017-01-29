@@ -10,7 +10,7 @@ from helper import output, item
 try:
   from pysnmp.entity.rfc3413.oneliner import cmdgen
 except ImportError:
-  output().warning("Please install the 'pysnmp' module for SNMP support.")
+  pass
 
 class capabilities():
   # set defaults
@@ -117,6 +117,8 @@ class capabilities():
       self.support = filter(None, [re.findall(re.escape(pdl), langs, re.I) for pdl in lang])
       self.set_support(model)
       output().green("found")
+    except NameError:
+      output().errmsg("not found", "pysnmp module not installed")
     except Exception as e:
       output().errmsg("not found", str(e))
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -5,6 +5,7 @@ import re, os, string, random, json, collections
 
 # local pret classes
 from printer import printer
+from operators import operators
 from helper import log, output, conv, file, item, const as c
 
 class postscript(printer):
@@ -13,7 +14,7 @@ class postscript(printer):
   def cmd(self, str_send, fb=True, crop=True, binary=False):
     str_recv = "" # response buffer
     if self.iohack: str_send = '{' + str_send + '} stopped' # br-script workaround
-    token = c.DELIMITER + str(random.randrange(2**16)) # unique response delimiter 
+    token = c.DELIMITER + str(random.randrange(2**16)) # unique response delimiter
     iohack = c.PS_IOHACK if self.iohack else ''   # optionally include output hack
     footer = '\n(' + token + '\\n) print flush\n' # additional line feed necessary
     # send command to printer device              # to get output on some printers
@@ -34,7 +35,7 @@ class postscript(printer):
 
   # send PostScript command, cause permanent changes
   def globalcmd(self, str_send, *stuff):
-    self.cmd(c.PS_GLOBAL + str_send, stuff)
+    return self.cmd(c.PS_GLOBAL + str_send, stuff)
 
   # handle error messages from PostScript interpreter
   def ps_err(self, str_recv):
@@ -60,7 +61,7 @@ class postscript(printer):
       #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       # handle devices that do not support ps output via 'print' or '=='
       if 'x1' in str_recv or self.error: self.iohack = False # all fine
-      elif 'x2' in str_recv: # hack required to get output (e.g. Brother)
+      elif 'x2' in str_recv: # hack required to get output (e.g. brother)
         output().errmsg('Crippled feedback', '%stdout hack enabled')
       else: # busy or not a PS printer or a silent one (e.g. Dell 3110cn)
         output().errmsg('No feedback', 'Printer busy, non-ps or silent')
@@ -462,21 +463,16 @@ class postscript(printer):
       │ reboot. Else we should use the /StartJobPassword instead. │
       └───────────────────────────────────────────────────────────┘
       '''
-      for n in range(1, 2): # XXXXXXXXXXXXXXXXXXX # add startjob here?
+      cycles = '100' # number of nvram write cycles per loop
+                     # large values kill old printers faster
+      for n in range(1, 10):
         self.globalcmd('/value {currentsystemparams /WaitTimeout get} def\n'
                        '/count 0 def /new {count 2 mod 30 add} def\n'
                        '{ << /WaitTimeout new >> setsystemparams\n'
-                       '  /count count 1 add def\n'
-                       '  value == count 1000 eq {exit} if\n'
-                       '} loop')
-        self.chitchat("\rNVRAM write cycles: " + str(n*1000), '')
-        # self.globalcmd('/value {currentsystemparams /WaitTimeout get} def\n'
-        #                '/reset value def /count reset 1000 sub def\n'
-        #                '{ << /WaitTimeout count >> setsystemparams\n'
-        #                '  /count count 1 add def % increment count\n'
-        #                '  value == count reset eq {exit} if\n'
-        #                '} loop')
-        # self.chitchat("\rNVRAM write cycles: " + str(n*1000), '')
+                       '  /count count 1 add def % increment\n'
+                       '  value count ' + cycles + ' eq {exit} if\n'
+                       '} loop', False)
+        self.chitchat("\rNVRAM write cycles: " + str(n*int(cycles)), '')
       print # echo newline if we get this far
 
   # ------------------------[ hang ]------------------------------------
@@ -524,7 +520,8 @@ class postscript(printer):
   def help_cross(self):
     print("Put printer graffiti on all hard copies:  cross <font> <text>")
     print("Read the docs on how to install custom fonts. Available fonts:")
-    for font in sorted(self.options_cross): print("• " + font)
+    if len(self.options_cross) > 0: last = sorted(self.options_cross)[-1]
+    for font in sorted(self.options_cross): print(('└─ ' if font == last else '├─ ') + font)
 
   fontdir = os.path.dirname(os.path.realpath(__file__))\
           + os.path.sep + 'fonts' + os.path.sep
@@ -559,46 +556,48 @@ class postscript(printer):
 # ------------------------[ capture <operation> ]-----------------------
   def do_capture(self, arg):
     "Capture further jobs to be printed on this device."
-    # hooks must be the first operators in documents to be printed
+    # hooks must be the first operators in documents to be printed (CUPS strategy)
     hook = ['currentfile', 'free {true 0 startjob} if'] # hook to alter initial vm
-    hack = ['filter', 'currentfile /ASCII85Decode filter'] # capture hook
-    free = '5' # mem limit in megabytes which must at least be available to capture
+    hack = ['filter', '/ASCII85Decode filter /LZWDecode filter'] # hook to capture
+    free = '5' # mem limit in megabytes that must at least be available to capture
+    path = 'capture/' # directory on printing device where to store captured files
     '''
-    TBD: implement other capture strategies than CUPS (ps2write)
-    ────────────────────────────────────────────────────────────
-    Capture strategy: CUPS (ps2write), BeginPage/EndPage, if/stopped
-    Content strategy: currentfile, statementedit, lineedit, stdin
-    Storage strategy: named file (raw), virtual file (compressed)
-    ┌───────────────────────────────────────────────────────┐
-    │                   supported features                  │
-    ├──────────────────────────┬─────────┬───────────┬──────┤
-    │ capture/storage strategy │ stopped │ BeginPage │ CUPS │
-    ├──────────────────────────┼─────────┼───────────┼──────┤
-    │               named file │    ✓    │     ✓     │  ✓   │
-    ├──────────────────────────┼─────────┼───────────┼──────┤
-    │             virtual file │    ✓    │     -     │  ✓   │
-    └──────────────────────────┴─────────┴───────────┴──────┘
+    TBD: implement further hooking than strategies than CUPS (ps2write)
+    ───────────────────────────────────────────────────────────────────
+    • hooking strategies: CUPS (ps2write), WinNT ErrorHandler, BeginPage/EndPage, if/stopped
+    • content strategies: currentfile, statementedit, lineedit, stdin
+    • storage strategies: named file (raw), virtual file (compressed)
+    ┌───────────────────────────────────────────────────────────────┐
+    │                 supported capture strategies                  │
+    ├──────────────────────────┬─────────┬───────────┬───────┬──────┤
+    │ hooking/storage strategy │ stopped │ BeginPage │ WinNT │ CUPS │
+    ├──────────────────────────┼─────────┼───────────┼───────┼──────┤
+    │               named file │   TBD   │    TBD    │  TBD  │  ✓   │
+    ├──────────────────────────┼─────────┼───────────┼───────┼──────┤
+    │             virtual file │   TBD   │     -     │  TBD  │  ✓   │
+    └──────────────────────────┴─────────┴───────────┴───────┴──────┘
     '''
-
     # record future print jobs
     if arg.startswith('start'):
       # get storage strategy
-      path = "capture/test"
-      data = "sometestdata"
-      self.append(path, data)
-      file = 'named' if data in self.get(path, len(data))[1] else 'virtual'
-      output().chitchat("Storage strategy: " + file + " file")
-      output().chitchat("Capture strategy: CUPS (ps2write)")
-      self.delete(path)
-
-      if file == 'named': # storage strategy: named file, capture strategy: CUPS (ps2write)
-        hook = 'currentfile' # must be first operator in documents to be printed
+      name = path + '.test'
+      self.onecmd("touch " + name)
+      storage = self.file_exists(name) != c.NONEXISTENT
+      output().chitchat("Storage strategy: " + ("named" if storage else "virtual") + " file")
+      output().chitchat("Content strategy: currentfile")     # currently the only strategy we have
+      output().chitchat("Hooking strategy: CUPS (ps2write)") # currently the only strategy we have
+      if storage: self.delete(name)
+      #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # storage strategy: named file | content strategy: currentfile | capture strategy: CUPS
+      if storage:
         str_send = 'true 0 startjob {                                                       \n'\
+                   '/storage true def                                                       \n'\
+                   '/free {vmstatus exch pop exch pop 1048576 div '+free+' ge} def          \n'\
                    '/capturehook {                                                          \n'\
-                   '  userdict /'+hook+' undef '+hook+'                                     \n'\
-                   '  userdict /recursion known not {                                       \n'\
-                   '    /recursion 0 def                                                    \n'\
-                   '    (This job will be captured\\n) print flush                          \n'\
+                   '  userdict /'+hook[0]+' undef '+hook[0]+'  % in case op is called again \n'\
+                   '  userdict /recursion known not {  % hooked op may occur multiple times \n'\
+                   '    /recursion true def                                                 \n'\
+                   '    (This job will be captured on disk\\n) print flush                  \n'\
                    '    %-------------------------------------------------------------------\n'\
                    '    /strcat {exch dup length 2 index length add string dup              \n'\
                    '    dup 4 2 roll copy length 4 -1 roll putinterval} bind def            \n'\
@@ -609,23 +608,25 @@ class postscript(printer):
                    '    %-------------------------------------------------------------------\n'\
                    '    false echo                            % stop interpreter slowdown   \n'\
                    '    /timestamp realtime def               % get time from interpreter   \n'\
-                   '    /capturefile {(capture/) timestamp 32 string cvs strcat} def        \n'\
+                   '    /capturefile {('+path+') timestamp 32 string cvs strcat} def        \n'\
                    '    /document {currentfile /ReusableStreamDecode filter} bind def       \n'\
                    '    %-------------------------------------------------------------------\n'\
-                   '    capturefile (w+) file dup (%!\\n' + hook + ' ) writestring closefile\n'\
+                   '    capturefile (w+) file dup (%!\\n' +hook[0]+' ) writestring closefile\n'\
                    '    document capturefile (a+) file copyfile      % save document to file\n'\
                    '    capturefile run                              % print actual document\n'\
+                   '    free not {capturefile deletefile} if         % we are out of memory!\n'\
                    '  } if                                                                  \n'\
-                   '  /free not {capturefile deletefile} if          % we are out of memory!\n'\
                    '} bind def                                                              \n'\
-                   '/' + hook + ' {capturehook} def                                         \n'\
-                   '(Future print jobs will be captured on disk or in memory)}              \n'\
+                   '/'+ hook[0] +' {capturehook} def                                        \n'\
+                   '(Future print jobs will be captured on disk!)}                          \n'\
                    '{(Cannot capture - unlock me first)} ifelse print'
         output().raw(self.cmd(str_send))
-
-      elif file == 'virtual': # storage strategy: virtual file, capture strategy: CUPS (ps2write)
+      #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # storage strategy: virtual file | content strategy: currentfile | capture strategy: CUPS
+      else:
         str_send = 'true 0 startjob {\n'\
                    '/free {vmstatus exch pop exch pop 1048576 div '+free+' ge} def        \n'\
+                   '/drop {128 string readline pop pop} def % ignore a single line        \n'\
                    '%---------------------------------------------------------------------\n'\
                    '%--------------[ get current document as file object ]----------------\n'\
                    '%---------------------------------------------------------------------\n'\
@@ -633,7 +634,7 @@ class postscript(printer):
                    '  filter /ReusableStreamDecode filter} bind def                       \n'\
                    '%---------------------------------------------------------------------\n'\
                    '/capturehook {                                                        \n'\
-                   '  (This job will be captured\\n) print                                \n'\
+                   '  (This job will be captured in memory\\n) print flush                \n'\
                    '  false echo                            % stop interpreter slowdown   \n'\
                    '  /timestamp realtime def               % get time from interpreter   \n'\
                    '  (capturedict) where {pop}             % print jobs are saved here   \n'\
@@ -643,17 +644,18 @@ class postscript(printer):
                    '  %-------------------------------------------------------------------\n'\
                    '  capturedict timestamp document put    % save document in dictionary \n'\
                    '  %- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n'\
-                   '% /state save def                       % backup current vm state     \n'\
-                   '% userdict /'+hook[0]+' undef           % reset hooked operator       \n'\
-                   '% userdict /'+hack[0]+' undef           % reset hacked operator       \n'\
-                   '% '+hack[1]+'                           % print prepended operands    \n'\
-                   '% capturedict timestamp get cvx exec    % print actual document       \n'\
-                   '% clear cleardictstack state restore    % restore original vm state   \n'\
+                   '  /state save def                       % backup current vm state     \n'\
+                   '  userdict /'+hook[0]+' undef           % reset hooked operator       \n'\
+                   '  userdict /'+hack[0]+' undef           % reset hacked operator       \n'\
+                   '  capturedict timestamp get dup drop    % fetch stored document       \n'\
+                   '  dup '+hack[1]+' cvx exec cvx exec     % print actual document       \n'\
+                   '  clear cleardictstack state restore    % restore original vm state   \n'\
                    '  %-------------------------------------------------------------------\n'\
-                   '} def\n'\
+                   '  /free not {capturedict timestamp undef} if   % we are out of memory!\n'\
+                   '} bind def\n'\
                    '/'+hook[0]+' {'+hook[1]+'} def\n'\
                    '/'+hack[0]+' {capturehook} def\n'\
-                   '(Future print jobs will be captured in memory but no longer printed!)}\n'\
+                   '(Future print jobs will be captured in memory!)}\n'\
                    '{(Cannot capture - unlock me first)} ifelse print'
         output().raw(self.cmd(str_send))
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -666,65 +668,86 @@ class postscript(printer):
       output().warning(self.cmd('currentdict /free known {free not\n'
         '{(Memory almost full, will not capture jobs anymore) print} if}\n'
         '{(Capturing print jobs is currently not active) print} ifelse'))
-      # ...
-      str_recv = self.cmd(
-                '(capturedict) where {capturedict\n'
-                '{ exch realtime sub (Date: ) print == dup          % get time diff\n'
-                '  resetfile (Size: ) print dup bytesavailable ==   % get file size\n'
-                '  100 {dup 128 string readline {(%%) anchorsearch  % get metadata\n'
-                '  {exch print (\\n) print} if pop}{pop exit} ifelse} repeat pop\n'
-                '  (' + c.DELIMITER + '\\n) print\n'
-                '} forall pop} if')
-      # ...
-      jobs = []
-      for val in filter(None, str_recv.split(c.DELIMITER)):
-        date = conv().timediff(item(re.findall('Date: (.*)', val)))
-        size = conv().filesize(item(re.findall('Size: (.*)', val)))
-        user = item(re.findall('For: (.*)', val))
-        name = item(re.findall('Title: (.*)', val))
-        soft = item(re.findall('Creator: (.*)', val))
-        jobs.append((date, size, user, name, soft))
-      # ...
-      if jobs:
-        output().joblist(('date', 'size', 'user', 'jobname', 'creator'))
-        output().hline(79)
-        for job in jobs: output().joblist(job)
+      #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      storage = 'true' in self.cmd('(storage) where ==')
+      if storage:
+        self.onecmd("ls capture")
+      else:
+        # get first 100 lines for each captured job
+        str_recv = self.cmd(
+          '(capturedict) where {capturedict\n'
+          '{ exch realtime sub (Date: ) print == dup          % get time diff\n'
+          '  resetfile (Size: ) print dup bytesavailable ==   % get file size\n'
+          '  100 {dup 128 string readline {(%%) anchorsearch  % get metadata\n'
+          '  {exch print (\\n) print} if pop}{pop exit} ifelse} repeat pop\n'
+          '  (' + c.DELIMITER + '\\n) print\n'
+          '} forall pop} if')
+        # grep for metadata in captured jobs
+        jobs = []
+        for val in filter(None, str_recv.split(c.DELIMITER)):
+          date = conv().timediff(item(re.findall('Date: (.*)', val)))
+          size = conv().filesize(item(re.findall('Size: (.*)', val)))
+          user = item(re.findall('For: (.*)', val))
+          name = item(re.findall('Title: (.*)', val))
+          soft = item(re.findall('Creator: (.*)', val))
+          jobs.append((date, size, user, name, soft))
+        # output metadata for captured jobs
+        if jobs:
+          output().joblist(('date', 'size', 'user', 'jobname', 'creator'))
+          output().hline(79)
+          for job in jobs: output().joblist(job)
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # save captured print jobs
     elif arg.startswith('fetch'):
-      jobs = self.cmd('(capturedict) where {capturedict {exch ==} forall} if').splitlines()
-      if not jobs: output().raw("No jobs captured")      
-      for job in jobs:
-        target, job = self.basename(self.target), self.basename(job)
-        root = os.path.join('capture', target)
-        lpath = os.path.join(root, job)
-        self.makedirs(root)
-        # download captured job
-        output().raw("Receiving " + lpath)
-        # code duplication with get() / do_get()
-        str_recv = self.cmd('/byte (0) def\n'
-                          + 'capturedict ' + job + ' get resetfile\n'
-                          + '/infile {capturedict ' + job + ' get} def\n'
-                          + '{infile read {byte exch 0 exch put\n'
-                          + '(%stdout) (w) file byte writestring}\n'
-                          + '{exit} ifelse\n'
-                        + '} loop', True, True, True)
-        data = self.cmd(str_recv)
-        print(str(len(data)) + " bytes received.")
-        # write to local file
-        file().write(lpath, data)
+      storage = 'true' in self.cmd('(storage) where ==')
+      if storage:
+        jobs = self.cmd('/str 256 string def ('+path+'*) {==} str filenameforall').splitlines()
+        if not jobs: output().raw("No jobs captured")
+        else: self.onecmd("mirror capture")
+      else:
+        jobs = self.cmd('(capturedict) where {capturedict {exch ==} forall} if').splitlines()
+        if not jobs: output().raw("No jobs captured")
+        for job in jobs:
+          # is basename sufficient to sanatize file names? we'll see…
+          target, job = self.basename(self.target), self.basename(job)
+          root = os.path.join('capture', target)
+          lpath = os.path.join(root, job)
+          self.makedirs(root)
+          # download captured job
+          output().raw("Receiving " + lpath)
+          data = '%!\ncurrentfile /ASCII85Decode filter'
+          data += self.cmd('/byte (0) def\n'
+            'capturedict ' + job + ' get dup resetfile\n'
+            '{dup read {byte exch 0 exch put\n'
+            '(%stdout) (w) file byte writestring}\n'
+            '{exit} ifelse} loop')
+          print(str(len(data)) + " bytes received.")
+          # write to local file
+          if lpath and data: file().write(lpath, data)
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # reprint saved print jobs
-    elif arg.startswith('print'):
-      output().raw(self.cmd('(capturedict) where {/count 0 def\n'
-        'capturedict {(printing...\n) print dup resetfile cvx exec\n'
-        '/count 1 count add def} forall count 8 string cvs print\n'
-        '( jobs reprinted) print} {(No jobs captured) print} ifelse'))
+    elif arg.endswith('print'):
+      output().raw(self.cmd(
+       '/str 256 string def /count 0 def\n'
+       '/showmsg {(printing...\\n) print} def\n'
+       '/increment {/count 1 count add def} def\n'
+       '/drop {128 string readline pop pop} def\n'
+       'userdict /'+hook[0]+' undef\n'\
+       'userdict /'+hack[0]+' undef\n'\
+       '(storage) where\n'
+       '{('+path+'*) {showmsg run increment} str filenameforall}\n'
+       '{(capturedict) where {capturedict {showmsg dup resetfile dup\n'
+       ' drop dup '+hack[1]+' cvx exec cvx exec increment} forall} if\n'
+       '} ifelse\n'
+       'count 0 eq {(No jobs captured) print}\n'
+       '{count str cvs print ( jobs reprinted) print} ifelse'))
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # end capturing print jobs
     elif arg.startswith('stop'):
       output().raw("Stopping job capture, deleting recorded jobs")
-      self.globalcmd('userdict /capturedict undef\n'
+      self.globalcmd('/str 256 string def ('+path+'*)\n'
+                     '{deletefile} str filenameforall\n'
+                     'userdict /capturedict undef\n'
                      'userdict /'+hook[0]+' undef\n'
                      'userdict /'+hack[0]+' undef')
     else:
@@ -745,13 +768,14 @@ class postscript(printer):
   # ------------------------[ hold ]------------------------------------
   def do_hold(self, arg):
     "Enable job retention."
-    output().info(self.globalcmd('currentpagedevice (CollateDetails) get (Hold) get 1 ne\n'
-                                 '{/retention 1 def}{/retention 0 def} ifelse\n'
-                                 '<< /Collate true /CollateDetails\n'
-                                 '<< /Hold retention /Type 8 >> >> setpagedevice\n'
-                                 '(Job retention ) print\n'
-                                 'currentpagedevice (CollateDetails) get (Hold) get 1 ne\n'
-                                 '{(disabled.) print}{(enabled.) print} ifelse'))
+    str_send = 'currentpagedevice (CollateDetails) get (Hold) get 1 ne\n'\
+               '{/retention 1 def}{/retention 0 def} ifelse\n'\
+               '<< /Collate true /CollateDetails\n'\
+               '<< /Hold retention /Type 8 >> >> setpagedevice\n'\
+               '(Job retention ) print\n'\
+               'currentpagedevice (CollateDetails) get (Hold) get 1 ne\n'\
+               '{(disabled.) print}{(enabled.) print} ifelse'
+    output().info(self.globalcmd(str_send))
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     '''
     **************************** HP/KYOCERA ****************************
@@ -804,24 +828,7 @@ class postscript(printer):
     if arg:
       functionlist = {'User-supplied Operators': arg.split()}
     else:
-      functionlist = { ### xxx -> class operators.py
-        '01. Operand Stack Manipulation Operators': ['pop', 'exch', 'dup', 'copy', 'index', 'roll', 'clear', 'count', 'mark', 'cleartomark', 'counttomark'],
-        '02. Arithmetic and Math Operators': ['add', 'div', 'idiv', 'mod', 'mul', 'sub', 'abs', 'neg', 'ceiling', 'floor', 'round', 'truncate', 'sqrt', 'atan', 'cos', 'sin', 'exp', 'ln', 'log', 'rand', 'srand', 'rrand'],
-        '03. Array Operators': ['array', 'length', 'get', 'put', 'getinterval', 'putinterval', 'astore', 'aload', 'forall'],
-        '04. Packed Array Operators': ['packedarray', 'setpacking', 'currentpacking'],
-        '05. Dictionary Operators': ['dict ', 'maxlength', 'begin', 'end', 'def', 'load', 'store', 'undef', 'known', 'where', 'currentdict', 'errordict', '$error', 'systemdict', 'userdict', 'globaldict', 'statusdict', 'countdictstack', 'dictstack', 'cleardictstack'],
-        '06. String Operators': ['string', 'anchorsearch', 'search'],
-        '07. Relational, Boolean, and Bitwise Operators': ['eq', 'ne', 'ge', 'gt', 'le', 'lt', 'and', 'or', 'xor', 'true', 'false', 'bitshift'],
-        '08. Control Operators': ['exec', 'if', 'ifelse', 'for', 'repeat', 'loop', 'exit', 'stop', 'stopped', 'countexecstack', 'execstack', 'quit', 'start'],
-        '09. Type, Attribute, and Conversion Operators': ['type', 'cvlit', 'cvx', 'xcheck', 'executeonly', 'noaccess', 'readonly', 'rcheck', 'wcheck', 'cvi', 'cvn', 'cvr', 'cvrs', 'cvs'],
-        '10. File Operators': ['file', 'filter', 'closefile', 'read', 'write', 'readhexstring', 'writehexstring', 'readstring', 'writestring', 'readline', 'token', 'bytesavailable', 'flush', 'flushfile', 'resetfile', 'status', 'run', 'currentfile', 'deletefile', 'renamefile', 'filenameforall', 'setfileposition', 'fileposition', 'print', '=', '==', 'stack', 'pstack', 'printobject', 'writeobject', 'setobjectformat', 'currentobjectformat'],
-        '11. Resource Operators': ['defineresource', 'undefineresource', 'findresource', 'findcolorrendering', 'resourcestatus', 'resourceforall'],
-        '12. Virtual Memory Operators': ['save', 'restore', 'setglobal', 'currentglobal', 'gcheck', 'startjob', 'defineuserobject', 'execuserobject', 'undefineuserobject'],
-        '13. Miscellaneous Operators': ['bind', 'null', 'version', 'realtime', 'usertime', 'languagelevel', 'product', 'revision', 'serialnumber', 'executive', 'echo', 'prompt'],
-        '14. Device Setup and Output Operators': ['showpage', 'copypage', 'setpagedevice', 'currentpagedevice', 'nulldevice'],
-        '15. Error Operators' : ['handleerror', '.error'],
-        '16. Supplement and Proprietary Operators' : ['BiteMe', 'brCIDCode', 'brfindfont', 'brGetCurrentColor', 'brgetjpnfont', '_BRFileExec', '_brGetXPSPage', '_brGetXPSThumb', '_brpdfscan', 'brlanguagelevel', 'brPchk', 'brPDFThumbPrint', 'brPSDKey', 'BrRegiChart', 'brTpForm', 'brTpPjlCheck', 'brTpStroke', 'buildfunction', 'buildtime', 'byteorder', 'cache_memory', 'callut', 'cexec', 'changeucrgcr', 'chdir', 'checksum', 'cidcompat', 'clearinterrupt', 'command', 'composefont', 'cwd', 'defaultduplexmode', 'defaultpapertray', 'defaultresolution', 'defaulttimeouts', 'defaulttrayswitch', 'defaulttumble', 'devcontrol', 'devdismount', 'devforall', 'devformat', 'devmount', 'devstatus', 'directimage', 'disableinterrupt', 'discardtransparencygroup', 'diskonline', 'diskstatus', 'displayoperatormsg', 'doautoformfeed', 'doexecutive', 'doffsuppress', 'doinitfile', 'dopanellock', 'dopowersave', 'doprinterrors', 'doreprint', 'dostartpage', 'dosysstart', 'duplexer', 'enableinterrupt', 'endjob', 'endtransparencygroup', 'endtransparencymask', 'enginesync', 'execdepth', 'execn', 'execpoolimgtable', 'execvecttoimagetable', 'findcolorrendering', 'firstside', 'fontnonzerowinding', 'fontprivatedict', 'gadget', 'getedlut', 'getenginedebug', 'getentitydir', 'getfinelut', 'getjobstms', 'getmydata', 'getpassword', 'getsuperfinelut', 'gettrue1200', 'getufstring', 'hardwareiomode', 'idle', 'idlefonts', 'ignoresize', 'imagemasksw', 'imagetiff', 'initializedisk', 'initlut', 'inittransparencymask', 'interrupts_clear', 'interrupts_enabled', 'interrupts_no', 'interrupts_reset', 'interrupts_yes', 'ipdsjog', 'jobtimeout', 'kccreatepic', 'kcdeletepic', 'kcloadpic', 'kcmakebarcode', 'kcrevivepic', 'kcsavepic', 'lzwavailable', 'malloc_verify', 'MD5Encode', 'newsheet', 'pagecount', 'pagesprinted', 'panel', 'paperdirectional', 'papertray', 'patternsearch', 'pdfnewsheet', 'peek', 'poke', 'powersavetime', 'pragmatics', 'printconfiguration', 'printername', 'printer_reset', 'printer_status', 'processcolors', 'processipdserror', 'pwd', 'ramsize', 'rdbytes', 'readinputbuffer', 'readpbstring', 'readtotalramsize', 'remain_memory', 'removeall', 'removeglyphs', 'resolveicc', 'sccbatch', 'sccinteractive', 'setbrFilename', 'setbrTpBM', 'setbrTpca', 'setcoverpage', 'setdefaultduplexmode', 'setdefaultpapertray', 'setdefaultresolution', 'setdefaulttimeouts', 'setdefaulttrayswitch', 'setdefaulttumble', 'setdoautoformfeed', 'setdoffsuppress', 'setdopanellock', 'setdopowersave', 'setdoprinterrors', 'setdoreprint', 'setdostartpage', 'setdosysstart', 'setedlut', 'setenginesync', 'setfilenameextend', 'setfillalpha', 'setfinelut', 'sethardwareiomode', 'setignoresize', 'setipdsmode', 'setjobname', 'setjobtimeout', 'setmanualduplexmode', 'setmediatype', 'setpantonescreen', 'setpapertray', 'setpassword', 'setprintername', 'setropmode', 'setsccbatch', 'setsccinteractive', 'setsmoothness', 'setsoftalpha', 'setsoftwareiomode', 'setstrokealpha', 'setsuperfinelut', 'setuniversalsize', 'setusbbinary', 'setuserdiskpercent', 'smooth4', 'softwareiomode', 'statementnumber', 'stretch', 'tonersave', 'train_memory', 'transparencyshowpage', 'ucrgcrforimage', 'ucrgcrtable600', 'ucrgcrtablecapt', 'unlimit', 'usepantonescreen', 'userdiskpercent', 'verify'] # TBD: reduct to the interesting ones
-        }
+      functionlist = operators.oplist
 
 ### may want to find unknown ops using: systemdict {dup type /operatortype eq {exch == pop}{pop pop} ifelse} forall
 
@@ -864,12 +871,13 @@ class postscript(printer):
     print("Dump dictionary:  dump <dict>")
     # print("If <dict> is empty, the whole dictionary stack is dumped.")
     print("Standard PostScript dictionaries:")
-    for dict in self.options_dump: print("• " + dict)
+    if len(self.options_dump) > 0: last = self.options_dump[-1]
+    for dict in self.options_dump: print(('└─ ' if dict == last else '├─ ') + dict)
 
   # undocumented ... what about proprietary dictionary names?
   options_dump = ('systemdict', 'statusdict', 'userdict', 'globaldict',
         'serverdict', 'errordict', 'internaldict', 'currentpagedevice',
-        'currentuserparams', 'currentsystemparams')                                ### xxx cam't we get those names dynamically?
+        'currentuserparams', 'currentsystemparams')
 
   def complete_dump(self, text, line, begidx, endidx):
     return [cat for cat in self.options_dump if cat.startswith(text)]
@@ -880,9 +888,9 @@ class postscript(printer):
   def dictdump(self, dict, resource):
     superexec = False # TBD: experimental privilege escalation
     if not dict: # dump whole dictstack if optional dict parameter is empty
-      return self.onecmd("help dump")
       # dict = 'superdict'
       # self.chitchat("No dictionary given - dumping everything (might take some time)")
+      return self.onecmd("help dump")
     # recursively dump contents of a postscript dictionary and convert them to json
     str_send = '/superdict {<< /universe countdictstack array dictstack >>} def\n'  \
                '/strcat {exch dup length 2 index length add string dup\n'           \
@@ -990,7 +998,8 @@ class postscript(printer):
     self.populate_resource()
     print("List or dump PostScript resource:  resource <category> [dump]")
     print("Available resources on this device:")
-    for res in sorted(self.options_resource): print("• " + res)
+    if len(self.options_resource) > 0: last = sorted(self.options_resource)[-1]
+    for res in sorted(self.options_resource): print(('└─ ' if res == last else '├─ ') + res)
 
   options_resource = []
   def complete_resource(self, text, line, begidx, endidx):
@@ -1056,184 +1065,3 @@ class postscript(printer):
 
   def complete_config(self, text, line, begidx, endidx):
     return [cat for cat in self.options_config if cat.startswith(text)]
-
-
-
-
-
-
-
-
-
-  def do_beginpage(self, arg):
-    output().info(self.cmd('''
-true 0 startjob
-<< /BeginPage {(BeginPage) == flush} bind
-   /EndPage   {(EndPage)   == flush} bind
->> setpagedevice
-(------- JOB #1 -------\n) print flush
-false 0 startjob
-(------- JOB #2 -------\n) print flush
-false 0 startjob
-(------- STARTJOB -------\n) print flush
-true 0 startjob
-(------- EOF -------\n) print flush
-    '''))
-
-  def do_execstack(self, arg):
-    output().info(self.cmd('''
-countexecstack array execstack {==} forall flush
-    '''))
-
-  def do_sysget(self, arg):
-    output().info(self.cmd('''
-% STRINGS
-
-(FontResourceDir: ) print currentsystemparams /FontResourceDir get == flush
-(GenericResourceDir: ) print currentsystemparams /GenericResourceDir get == flush
-(GenericResourcePathSep: ) print currentsystemparams /GenericResourcePathSep get == flush
-
-% INTEGERS:
-
-(MaxDisplayList: ) print currentsystemparams /MaxDisplayList get == flush
-(MaxFontCache: ) print currentsystemparams /MaxFontCache get == flush
-(MaxFormCache: ) print currentsystemparams /MaxFormCache get == flush
-(MaxPatternCache: ) print currentsystemparams /MaxPatternCache get == flush
-(MaxScreenStorage: ) print currentsystemparams /MaxScreenStorage get == flush
-(MaxUPathCache: ) print currentsystemparams /MaxUPathCache get == flush
-(WaitTimeout: ) print currentsystemparams /WaitTimeout get == flush
-    '''))
-
-  def do_sysset(self, arg):
-    output().info(self.cmd('''
-% STRINGS
-
-true 0 startjob
-
-<< /FontResourceDir           (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-<< /GenericResourceDir        (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-<< /GenericResourcePathSep    (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-
-% INTEGERS:
-
-<< /MaxDisplayList            10000000   >> setsystemparams
-<< /MaxFontCache              10000000   >> setsystemparams
-<< /MaxFormCache              10000000   >> setsystemparams
-<< /MaxPatternCache           10000000   >> setsystemparams
-<< /MaxScreenStorage          10000000   >> setsystemparams
-<< /MaxUPathCache             10000000   >> setsystemparams
-<< /WaitTimeout               10000000   >> setsystemparams
-
-(SET\n) print flush
-    '''))
-
-  def do_sysreset(self, arg):
-    output().info(self.cmd('''
-% STRINGS
-
-<< /FontResourceDir           (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-<< /GenericResourceDir        (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-<< /GenericResourcePathSep    (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-
-% INTEGERS:
-
-<< /MaxDisplayList            10000000   >> setsystemparams
-<< /MaxFontCache              10000000   >> setsystemparams
-<< /MaxFormCache              10000000   >> setsystemparams
-<< /MaxPatternCache           10000000   >> setsystemparams
-<< /MaxScreenStorage          10000000   >> setsystemparams
-<< /MaxUPathCache             10000000   >> setsystemparams
-<< /WaitTimeout               10000000   >> setsystemparams
-
-<< /FactoryDefaults true >> setsystemparams
-
-% STRINGS
-
-(FontResourceDir: ) print currentsystemparams /FontResourceDir get == flush
-(GenericResourceDir: ) print currentsystemparams /GenericResourceDir get == flush
-(GenericResourcePathSep: ) print currentsystemparams /GenericResourcePathSep get == flush
-
-% INTEGERS:
-
-(MaxDisplayList: ) print currentsystemparams /MaxDisplayList get == flush
-(MaxFontCache: ) print currentsystemparams /MaxFontCache get == flush
-(MaxFormCache: ) print currentsystemparams /MaxFormCache get == flush
-(MaxPatternCache: ) print currentsystemparams /MaxPatternCache get == flush
-(MaxScreenStorage: ) print currentsystemparams /MaxScreenStorage get == flush
-(MaxUPathCache: ) print currentsystemparams /MaxUPathCache get == flush
-(WaitTimeout: ) print currentsystemparams /WaitTimeout get == flush
-    '''))
-
-  def do_sysrestart(self, arg):
-    output().info(self.cmd('''
-% STRINGS
-
-<< /FontResourceDir           (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-<< /GenericResourceDir        (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-<< /GenericResourcePathSep    (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-
-% INTEGERS:
-
-<< /MaxDisplayList            10000000   >> setsystemparams
-<< /MaxFontCache              10000000   >> setsystemparams
-<< /MaxFormCache              10000000   >> setsystemparams
-<< /MaxPatternCache           10000000   >> setsystemparams
-<< /MaxScreenStorage          10000000   >> setsystemparams
-<< /MaxUPathCache             10000000   >> setsystemparams
-<< /WaitTimeout               10000000   >> setsystemparams
-
-true 0 startjob systemdict /quit get exec
-
-% STRINGS
-
-(FontResourceDir: ) print currentsystemparams /FontResourceDir get == flush
-(GenericResourceDir: ) print currentsystemparams /GenericResourceDir get == flush
-(GenericResourcePathSep: ) print currentsystemparams /GenericResourcePathSep get == flush
-
-% INTEGERS:
-
-(MaxDisplayList: ) print currentsystemparams /MaxDisplayList get == flush
-(MaxFontCache: ) print currentsystemparams /MaxFontCache get == flush
-(MaxFormCache: ) print currentsystemparams /MaxFormCache get == flush
-(MaxPatternCache: ) print currentsystemparams /MaxPatternCache get == flush
-(MaxScreenStorage: ) print currentsystemparams /MaxScreenStorage get == flush
-(MaxUPathCache: ) print currentsystemparams /MaxUPathCache get == flush
-(WaitTimeout: ) print currentsystemparams /WaitTimeout get == flush
-    '''))
-
-  def do_sysstartjob(self, arg):
-    output().info(self.cmd('''
-% STRINGS
-
-<< /FontResourceDir           (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-<< /GenericResourceDir        (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-<< /GenericResourcePathSep    (XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)  >> setsystemparams
-
-% INTEGERS:
-
-<< /MaxDisplayList            10000000   >> setsystemparams
-<< /MaxFontCache              10000000   >> setsystemparams
-<< /MaxFormCache              10000000   >> setsystemparams
-<< /MaxPatternCache           10000000   >> setsystemparams
-<< /MaxScreenStorage          10000000   >> setsystemparams
-<< /MaxUPathCache             10000000   >> setsystemparams
-<< /WaitTimeout               10000000   >> setsystemparams
-
-true 0 startjob
-
-% STRINGS
-
-(FontResourceDir: ) print currentsystemparams /FontResourceDir get == flush
-(GenericResourceDir: ) print currentsystemparams /GenericResourceDir get == flush
-(GenericResourcePathSep: ) print currentsystemparams /GenericResourcePathSep get == flush
-
-% INTEGERS:
-
-(MaxDisplayList: ) print currentsystemparams /MaxDisplayList get == flush
-(MaxFontCache: ) print currentsystemparams /MaxFontCache get == flush
-(MaxFormCache: ) print currentsystemparams /MaxFormCache get == flush
-(MaxPatternCache: ) print currentsystemparams /MaxPatternCache get == flush
-(MaxScreenStorage: ) print currentsystemparams /MaxScreenStorage get == flush
-(MaxUPathCache: ) print currentsystemparams /MaxUPathCache get == flush
-(WaitTimeout: ) print currentsystemparams /WaitTimeout get == flush
-    '''))

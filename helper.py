@@ -6,8 +6,16 @@ from socket import socket
 import sys, os, re, stat, math, time, datetime
 
 # third party modules
-try:
-  from colorama import Fore, Back, Style
+try: # unicode monkeypatch for windoze
+  import win_unicode_console
+  win_unicode_console.enable()
+except:
+  msg = "Please install the 'win_unicode_console' module."
+  if os.name == 'nt': print(msg)
+
+try: # os independent color support
+  from colorama import init, Fore, Back, Style
+  init() # required to get colors on windoze
 except ImportError:
   msg = "Please install the 'colorama' module for color support."
   # poor man's colored output (ANSI)
@@ -204,7 +212,7 @@ class output():
           value, recursion = '', True
       # value = value.encode('ascii',errors='ignore')
       node = '┬' if recursion else '─'
-      edge = indent + ('╰' if key == last else '├')
+      edge = indent + ('└' if key == last else '├')
       # output current node in dictionary
       print("%s%s %-3s  %-11s  %-30s  %s" % (edge, node, perms, type, key, value))
       if recursion: # ...
@@ -253,7 +261,8 @@ class conv():
   def lsdate(self, date):
     year1 = datetime.datetime.now().year
     year2 = datetime.datetime.fromtimestamp(date).year
-    format = "%b %e %R" if year1 == year2 else "%b %e  %Y"
+    pdate = '%b %e ' if os.name == 'posix' else '%b %d '
+    format = pdate + "%H:%M" if year1 == year2 else pdate + " %Y"
     return time.strftime(format, time.localtime(date))
 
   # return date plus/minus given seconds

