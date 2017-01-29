@@ -133,8 +133,7 @@ open      Connect to remote device:  open <target>
 close     Disconnect from device.
 timeout   Set connection timeout:  timeout <seconds>
 site      Execute custom command on printer:  site <command>
-send      Send raw data to printer:  print <file>|"text"
-print     Print image or document:  print <file>
+print     Print image file or raw text:  print <file>|"text"
 discover  Discover local printer devices via SNMP.
 exit      Exit the interpreter.
 ```
