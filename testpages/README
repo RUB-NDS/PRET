@@ -1,0 +1,6 @@
+This directory contains PostScript and PCL files which can be sent
+directly to a printer using netcat on port 9100/tcp or the `print'
+command of PRET. Using the `print' command, you can also directly
+(without installing a printer driver) print other image files and
+documents, not understood by the printer if ImageMagick's convert
+comand and GhostScript are installed for conversion.

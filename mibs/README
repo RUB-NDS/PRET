@@ -1,0 +1,5 @@
+This directory contains general-purpose and printer-related MIBs.
+From PRET v0.32 on we switched from snimpy to pysnmp and the MIB
+files are no longer required. It would still be worth assembling
+a collection of MIBs from the various printer manufacturers here
+and analyze which features can be activated through SNMP or PML.

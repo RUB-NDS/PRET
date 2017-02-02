@@ -41,7 +41,7 @@ def usage():
   lpdtest printer put ../../etc/passwd
   lpdtest printer rm /some/file/on/printer
   lpdtest printer in '() {:;}; ping -c1 1.2.3.4'
-  lpdtest printer mail lpdtest@dontsendmesapm.de''',
+  lpdtest printer mail lpdtest@mailhost.local''',
   formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument("hostname", help="printer ip address or hostname")
   parser.add_argument('mode', choices=['get', 'put', 'rm', 'in', 'mail'],

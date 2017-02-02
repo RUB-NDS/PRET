@@ -1,0 +1,7 @@
+This directory contains EPS files which can be overlayed on
+other people' print jobs (if they use PostScript as printer
+driver) by using PRET's `overlay' command in `ps' mode. You
+can add and overlay custom EPS files of course. Create them
+on your own or get them from some vector graphics portal.
+
+Let the printer pranks begin!
