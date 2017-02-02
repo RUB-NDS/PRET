@@ -703,7 +703,12 @@ class postscript(printer):
       if storage:
         jobs = self.cmd('/str 256 string def ('+path+'*) {==} str filenameforall').splitlines()
         if not jobs: output().raw("No jobs captured")
-        else: self.onecmd("mirror capture")
+        else:
+          self.onecmd("mirror capture")
+          # SOME DEVICES (LEXMARK) ADD CARRIAGE RETURN TO ALL NEWLINES
+          # THIS NEEDS TO BE FIXED AND SHOULD BE HANDLED IN helper.py
+          output().chitchat("WORKAROUND: If you cannot open captured files with e.g."\
+                            "Evince, use `col -b' to strip carriage return first...")
       else:
         jobs = self.cmd('(capturedict) where {capturedict {exch ==} forall} if').splitlines()
         if not jobs: output().raw("No jobs captured")
@@ -722,6 +727,11 @@ class postscript(printer):
             '(%stdout) (w) file byte writestring}\n'
             '{exit} ifelse} loop')
           print(str(len(data)) + " bytes received.")
+          # ************************************************************
+          # monkeypatch: remove carriage return from captured files,
+          # otherwise they won't be displayed correctly in evince etc.
+          # ************************************************************
+          data = os.linesep.join([line.strip() for line in data.splitlines()])
           # write to local file
           if lpath and data: file().write(lpath, data)
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -747,9 +757,10 @@ class postscript(printer):
       output().raw("Stopping job capture, deleting recorded jobs")
       self.globalcmd('/str 256 string def ('+path+'*)\n'
                      '{deletefile} str filenameforall\n'
-                     'userdict /capturedict undef\n'
                      'userdict /'+hook[0]+' undef\n'
-                     'userdict /'+hack[0]+' undef')
+                     'userdict /'+hack[0]+' undef\n'
+                     'userdict /capturedict undef\n'
+                     'userdict /storage undef')
     else:
       self.help_capture()
 
