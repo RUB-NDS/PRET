@@ -5,7 +5,7 @@ import re, os, sys, cmd, glob, errno, random, ntpath
 import posixpath, hashlib, tempfile, subprocess
 
 # local pret classes
-from helper import log, output, file, item, conn, const as c
+from helper import log, output, conv, file, item, conn, const as c
 from discovery import discovery
 from fuzzer import fuzzer
 
@@ -397,6 +397,9 @@ class printer(cmd.Cmd, object):
     if str_recv != c.NONEXISTENT:
       rsize, data = str_recv
       lsize = len(data)
+      # fix carriage return chars added by some devices
+      if lsize != rsize and len(conv().nstrip(data)) == rsize:
+        lsize, data = rsize, conv().nstrip(data)
       # write to local file
       file().write(lpath, data)
       if lsize == rsize:

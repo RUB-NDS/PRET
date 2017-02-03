@@ -277,6 +277,10 @@ class conv():
         return (("%4.1f%s" if unit == 'M' else "%4.0f%s") % (num, unit)) 
       num /= 1024.0
 
+  # remove carriage return from line breaks
+  def nstrip(self, data):
+    return re.sub(r'\r\n', '\n', data)
+
 # ----------------------------------------------------------------------
 
 class file():

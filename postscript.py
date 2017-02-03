@@ -591,13 +591,13 @@ class postscript(printer):
       # storage strategy: named file | content strategy: currentfile | capture strategy: CUPS
       if storage:
         str_send = 'true 0 startjob {                                                       \n'\
-                   '/storage true def                                                       \n'\
+                   '/storage true def /str 32 string def                                    \n'\
                    '/free {vmstatus exch pop exch pop 1048576 div '+free+' ge} def          \n'\
                    '/capturehook {                                                          \n'\
                    '  userdict /'+hook[0]+' undef '+hook[0]+'  % in case op is called again \n'\
                    '  userdict /recursion known not {  % hooked op may occur multiple times \n'\
                    '    /recursion true def                                                 \n'\
-                   '    (This job will be captured on disk\\n) print flush                  \n'\
+                   '    (This job will be captured on (ram)disk\\n) print flush             \n'\
                    '    %-------------------------------------------------------------------\n'\
                    '    /strcat {exch dup length 2 index length add string dup              \n'\
                    '    dup 4 2 roll copy length 4 -1 roll putinterval} bind def            \n'\
@@ -606,9 +606,9 @@ class postscript(printer):
                    '    index 1 index writestring length 5 -1 roll add 4 1 roll not {exit}  \n'\
                    '    if} loop cleartomark 3 -1 roll closefile pop closefile} bind def    \n'\
                    '    %-------------------------------------------------------------------\n'\
-                   '    false echo                            % stop interpreter slowdown   \n'\
-                   '    /timestamp realtime def               % get time from interpreter   \n'\
-                   '    /capturefile {('+path+') timestamp 32 string cvs strcat} def        \n'\
+                   '    false echo                               % stop interpreter slowdown\n'\
+                   '    /timestamp realtime str cvs def          % get time from interpreter\n'\
+                   '    /capturefile {('+path+') timestamp strcat (.ps) strcat} def         \n'\
                    '    /document {currentfile /ReusableStreamDecode filter} bind def       \n'\
                    '    %-------------------------------------------------------------------\n'\
                    '    capturefile (w+) file dup (%!\\n' +hook[0]+' ) writestring closefile\n'\
@@ -618,7 +618,7 @@ class postscript(printer):
                    '  } if                                                                  \n'\
                    '} bind def                                                              \n'\
                    '/'+ hook[0] +' {capturehook} def                                        \n'\
-                   '(Future print jobs will be captured on disk!)}                          \n'\
+                   '(Future print jobs will be captured on (ram)disk!)}                     \n'\
                    '{(Cannot capture - unlock me first)} ifelse print'
         output().raw(self.cmd(str_send))
       #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -703,12 +703,7 @@ class postscript(printer):
       if storage:
         jobs = self.cmd('/str 256 string def ('+path+'*) {==} str filenameforall').splitlines()
         if not jobs: output().raw("No jobs captured")
-        else:
-          self.onecmd("mirror capture")
-          # SOME DEVICES (LEXMARK) ADD CARRIAGE RETURN TO ALL NEWLINES
-          # THIS NEEDS TO BE FIXED AND SHOULD BE HANDLED IN helper.py
-          output().chitchat("WORKAROUND: If you cannot open captured files with e.g."\
-                            "Evince, use `col -b' to strip carriage return first...")
+        else: self.onecmd("mirror capture")
       else:
         jobs = self.cmd('(capturedict) where {capturedict {exch ==} forall} if').splitlines()
         if not jobs: output().raw("No jobs captured")
@@ -716,7 +711,7 @@ class postscript(printer):
           # is basename sufficient to sanatize file names? we'll see…
           target, job = self.basename(self.target), self.basename(job)
           root = os.path.join('capture', target)
-          lpath = os.path.join(root, job)
+          lpath = os.path.join(root, job + '.ps')
           self.makedirs(root)
           # download captured job
           output().raw("Receiving " + lpath)
@@ -726,12 +721,8 @@ class postscript(printer):
             '{dup read {byte exch 0 exch put\n'
             '(%stdout) (w) file byte writestring}\n'
             '{exit} ifelse} loop')
+          data = conv().nstrip(data) # remove carriage return chars
           print(str(len(data)) + " bytes received.")
-          # ************************************************************
-          # monkeypatch: remove carriage return from captured files,
-          # otherwise they won't be displayed correctly in evince etc.
-          # ************************************************************
-          data = os.linesep.join([line.strip() for line in data.splitlines()])
           # write to local file
           if lpath and data: file().write(lpath, data)
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
