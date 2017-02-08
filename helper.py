@@ -470,6 +470,7 @@ class const(): # define constants
   PS_PROMPT   = '>' # TBD: could be derived from PS command 'prompt'
   PS_HEADER   = '@PJL ENTER LANGUAGE = POSTSCRIPT\n%!\n'
   PS_GLOBAL   = 'true 0 startjob pop\n' # 'serverdict begin 0 exitserver'
+  PS_SUPER    = '\n1183615869 internaldict /superexec get exec'
   PS_NOHOOK   = '/nohook true def\n'
   PS_IOHACK   = '/print {(%stdout) (w) file dup 3 2 roll writestring flushfile} def\n'\
                 '/== {128 string cvs print (\\n) print} def\n'
