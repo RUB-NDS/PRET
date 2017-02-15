@@ -14,7 +14,7 @@ PRET only requires a Python2 interpreter. For colored output and SNMP support ho
 
     # pip install colorama pysnmp
 
-If running on a Windoze console and unicode characters are not displayed correctly, install the *win_unicode_console* module:
+If running on a Windoze console and Unicode characters are not displayed correctly, install the *win_unicode_console* module:
 
     # pip install win_unicode_console
 
