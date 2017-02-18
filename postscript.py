@@ -35,11 +35,11 @@ class postscript(printer):
 
   # send PostScript command, cause permanent changes
   def globalcmd(self, str_send, *stuff):
-    return self.cmd(c.PS_GLOBAL + str_send, stuff)
+    return self.cmd(c.PS_GLOBAL + str_send, *stuff)
 
   # send PostScript command, bypass invalid access
   def supercmd(self, str_send, *stuff):
-    return self.cmd('{' + str_send + '}' + c.PS_SUPER, stuff)
+    return self.cmd('{' + str_send + '}' + c.PS_SUPER, *stuff)
 
   # handle error messages from PostScript interpreter
   def ps_err(self, str_recv):
@@ -139,23 +139,16 @@ class postscript(printer):
   def dirlist(self, path="", r=True):
     if r: path = self.rpath(path)
     path = self.escape(path + self.get_sep(path))
-    # ------------------------------------------------------------------
-    timeout, timeout_old = self.timeout * 2, self.timeout
-    self.do_timeout(timeout, True) # workaround: dynamic timeout
-    #if not self.fuzz: self.chitchat("Retrieving file list. "
-    #+ "Temporarily increasing timeout to " + str(int(timeout)) + ".")
-    # ------------------------------------------------------------------
     vol = "" if self.vol else "%*%" # search any volume if none specified
     # also lists 'hidden' .dotfiles; special treatment for brother devices
     str_recv = self.find(vol + path + "**") or self.find(vol + path + "*")
     list = {name for name in str_recv.splitlines()}
-    self.do_timeout(timeout_old, True)
     return sorted(list)
 
   def find(self, path):
     str_send = '/str 256 string def (' + path + ') '\
                '{print (\\n) print} str filenameforall'
-    return self.cmd(str_send, False)
+    return self.timeoutcmd(str_send, self.timeout * 2, False)
 
   # ------------------------[ ls <path> ]-------------------------------
   def do_ls(self, arg):
@@ -393,15 +386,12 @@ class postscript(printer):
     # setsystemparams in which FactoryDefaults is the only entry«
     # **********************************************************
     if not arg:
-      print("No password given, cracking.")
+      print("No password given, cracking.") # 140k tries/sec on lj4250!
       output().chitchat("If this ain't successful, try 'unlock bypass'")
-      timeout, timeout_old = self.timeout * 100, self.timeout
-      self.do_timeout(timeout, True) # workaround: dynamic timeout
-      arg = self.cmd('/min 0 def /max ' + str(max) + ' def\n'
-             'statusdict begin { min 1 max\n'
-             '  {dup checkpassword {== flush stop} {pop} ifelse} for\n'
-             '} stopped pop') # ~140.000 tries/sec on the lj4250, wtf?
-      self.do_timeout(timeout_old, True) # restore original timeout
+      arg = self.timeoutcmd('/min 0 def /max ' + str(max) + ' def\n'
+              'statusdict begin {min 1 max\n'
+              '  {dup checkpassword {== flush stop}{pop} ifelse} for\n'
+              '} stopped pop', self.timeout * 100)
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # superexec can be used to reset PostScript passwords on most devices
     elif arg == 'bypass':
@@ -415,7 +405,8 @@ class postscript(printer):
                         '  /SystemParamsPassword ()\n' # mostly harmless
                         '  /StartJobPassword ()\n' # permanent VM change
                         '  >> setsystemparams\n} stopped ==')
-    if not 'false' in str_recv: output().warning("Cannot unlock")
+    msg = "Use the 'reset' command to restore factory defaults"
+    if not 'false' in str_recv: output().errmsg("Cannot unlock", msg)
     else: output().raw("Device unlocked with password: " + arg)
 
   # ------------------------[ restart ]---------------------------------
@@ -436,8 +427,9 @@ class postscript(printer):
     sets FactoryDefaults to true is not the last job executed straight before
     power-off, the request is ignored; this reduces the chance that malicious
     jobs will attempt to perform this operation.« '''
-    self.cmd('<< /FactoryDefaults true >> setsystemparams')
+    self.cmd('<< /FactoryDefaults true >> setsystemparams', False)
     output().raw("Printer must be turned off immediately for changes to take effect.")
+    output().raw("This can be accomplished, using the 'restart' command in PJL mode.")
 
   # ------------------------[ format ]----------------------------------
   def do_format(self, arg):
@@ -478,7 +470,7 @@ class postscript(printer):
       '''
       cycles = '100' # number of nvram write cycles per loop
                      # large values kill old printers faster
-      for n in range(1, 10):
+      for n in range(1, 1000000):
         self.globalcmd('/value {currentsystemparams /WaitTimeout get} def\n'
                        '/count 0 def /new {count 2 mod 30 add} def\n'
                        '{ << /WaitTimeout new >> setsystemparams\n'

@@ -34,7 +34,7 @@ class pjl(printer):
           str_recv = re.compile('\x0c?@PJL INFO STATUS.*', re.DOTALL).sub('', str_recv)
         if crop:
           # crop very first PJL line which is echoed by most interpreters
-          str_recv = re.sub(r'^(\x00+)?@PJL.*' + c.EOL, '', str_recv)
+          str_recv = re.sub(r'^\x04?(\x00+)?@PJL.*' + c.EOL, '', str_recv)
       return self.pjl_err(str_recv, str_stat)
 
     # handle CTRL+C and exceptions
@@ -389,6 +389,7 @@ class pjl(printer):
     if not arg:
       arg = raw_input("Message: ")
     arg = arg.strip('"') # remove quotes
+    self.chitchat("Setting printer's display message to \"" + arg + "\"")
     self.cmd('@PJL RDYMSG DISPLAY="' + arg + '"', False)
 
   # ------------------------[ offline <message> ]-----------------------
@@ -405,14 +406,18 @@ class pjl(printer):
   # ------------------------[ restart ]---------------------------------
   def do_restart(self, arg):
     "Restart printer."
+    output().raw("Trying to restart the device via PML (Printer Managment Language)")
     self.cmd('@PJL DMCMD ASCIIHEX="040006020501010301040104"', False)
     if not self.conn._file: # in case we're connected over inet socket
-      self.chitchat("This command works only for HP printers. For other vendors, try:")
-      self.chitchat("snmpset -v1 -c public " + self.target + " 1.3.6.1.2.1.43.5.1.1.3.1 i 4")
+      output().chitchat("This command works only for HP printers. For other vendors, try:")
+      output().chitchat("snmpset -v1 -c public " + self.target + " 1.3.6.1.2.1.43.5.1.1.3.1 i 4")
 
   # ------------------------[ reset ]-----------------------------------
   def do_reset(self, arg):
     "Reset to factory defaults."
+    if not self.conn._file: # in case we're connected over inet socket
+      output().warning("Warning: This may also reset TCP/IP settings to factory defaults.")
+      output().warning("You will not be able to reconnect anymore. Press CTRL+C to abort.")
     if output().countdown("Restoring factory defaults in...", 10, self):
       # reset nvram for pml-aware printers (hp)
       self.cmd('@PJL DMCMD ASCIIHEX="040006020501010301040106"', False)
@@ -423,8 +428,8 @@ class pjl(printer):
              + '@PJL INITIALIZE'                + c.EOL
              + '@PJL SET SERVICEMODE=EXIT', False)
       if not self.conn._file: # in case we're connected over inet socket
-        self.chitchat("This command works only for HP printers. For other vendors, try:")
-        self.chitchat("snmpset -v1 -c public " + self.target + " 1.3.6.1.2.1.43.5.1.1.3.1 i 6")
+        output().chitchat("This command works only for HP printers. For other vendors, try:")
+        output().chitchat("snmpset -v1 -c public " + self.target + " 1.3.6.1.2.1.43.5.1.1.3.1 i 6")
 
   # ------------------------[ selftest ]--------------------------------
   def do_selftest(self, arg):
@@ -642,7 +647,7 @@ class pjl(printer):
       if len(keyspace) > 1 and pin:
         self.chitchat("\rTrying PIN " + str(pin) + " (" + "%.2f" % (pin/655.35) + "%)", '')
       # send current chunk of PJL commands
-      str_recv = self.cmd(str_send)
+      str_recv = self.timeoutcmd(str_send, self.timeout*5)
       # seen hardcoded strings like 'ENABLED', 'ENABLE' and 'ENALBED' (sic!) in the wild
       if str_recv.startswith("ENA"):
         if len(keyspace) == 1:
@@ -668,7 +673,7 @@ class pjl(printer):
     self.chitchat("Receiving PJL variables.", '')
     lines = self.cmd('@PJL INFO VARIABLES').splitlines()
     variables = [var.split('=', 1)[0] for var in lines if '=' in var]
-    self.chitchat("Found " + str(len(variables)) + " variables.")
+    self.chitchat(" Found " + str(len(variables)) + " variables.")
     # user input to flood = custom pjl variables and command parameters
     inputs = ['@PJL SET ' + var + '=[buffer]' for var in variables] + [
       ### environment commands ###
@@ -697,5 +702,5 @@ class pjl(printer):
       '@PJL FSUPLOAD NAME="[buffer]"']
     for val in inputs:
       output().raw("Buffer size: " + str(size) + ", Sending: ", val + os.linesep)
-      self.cmd(val.replace('[buffer]', char*size), False)
+      self.timeoutcmd(val.replace('[buffer]', char*size), self.timeout*10, False)
     self.cmd("@PJL ECHO") # check if device is still reachable

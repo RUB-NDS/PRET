@@ -225,6 +225,14 @@ class printer(cmd.Cmd, object):
     except Exception as e:
       output().errmsg("Cannot set timeout", str(e))
 
+  # send mode-specific command whith modified timeout
+  def timeoutcmd(self, str_send, timeout, *stuff):
+    timeout_old = self.timeout
+    self.do_timeout(timeout, True)
+    str_recv = self.cmd(str_send, *stuff)
+    self.do_timeout(timeout_old, True)
+    return str_recv
+
   # ------------------------[ reconnect ]-------------------------------
   def do_reconnect(self, *arg):
     self.do_close()
