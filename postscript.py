@@ -26,11 +26,12 @@ class postscript(printer):
       self.send(cmd_send)
       # use random token or error message as delimiter PS responses
       str_recv = self.recv(token + ".*$" + "|" + c.PS_FLUSH, fb, crop, binary)
+      self.disconnect()
       return self.ps_err(str_recv)
 
     # handle CTRL+C and exceptions
     except (KeyboardInterrupt, Exception) as e:
-      self.reconnect(str(e))
+      self.disconnect()
       return ""
 
   # send PostScript command, cause permanent changes
@@ -71,6 +72,7 @@ class postscript(printer):
         output().errmsg('No feedback', 'Printer busy, non-ps or silent')
 
   # ------------------------[ shell ]-----------------------------------
+  """
   def do_shell(self, arg):
     "Open interactive PostScript shell."
     # politely request poor man's remote postscript shell
@@ -91,6 +93,7 @@ class postscript(printer):
       pass
     # reconnect with new conn object
     self.reconnect(None)
+  """
 
   # --------------------------------------------------------------------
   # check if remote volume exists

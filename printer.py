@@ -96,9 +96,9 @@ class printer(cmd.Cmd, object):
       # write non-empty lines to logfile
       log().comment(self.logfile, line)
       # only let "offline" functions pass if not connected
-      if self.conn == None:
-        print(self.offline_str)
-        return os.linesep
+      # if self.conn == None:
+      #   print(self.offline_str)
+      #   return os.linesep
     # finally return original command
     return line
 
@@ -198,11 +198,24 @@ class printer(cmd.Cmd, object):
 
   # wrapper to send data
   def send(self, *args):
+    if self.target: self.connect(self.target)
     if self.conn: self.conn.send(*args)
 
   # wrapper to recv data
   def recv(self, *args):
     return self.conn.recv_until(*args) if self.conn else ""
+
+  def connect(self, arg):
+    # open connection
+    try:
+      newtarget = (arg != self.target)
+      self.target = arg # set new target
+      self.conn = conn(False, self.debug, self.quiet)
+      self.conn.timeout(self.timeout)
+      self.conn.open(arg)
+    except Exception as e:
+      output().errmsg("Connection to " + arg + " failed", str(e))
+      self.do_close()
 
   # ------------------------[ close ]-----------------------------------
   def do_close(self, *arg):
@@ -212,6 +225,11 @@ class printer(cmd.Cmd, object):
       self.conn = None
     print("Connection closed.")
     self.set_prompt()
+
+  def disconnect(self):
+    if self.conn:
+      self.conn.close()
+      self.conn = None
 
   # ------------------------[ timeout <seconds> ]-----------------------
   def do_timeout(self, arg, quiet=False):

@@ -1,5 +1,9 @@
 ## PRET - Printer Exploitation Toolkit
 
+**multi-user branch**
+
+This (mostly untested) version of PRET allows multiple users to test a single printer in parallel by disconnecting after every command send to the device. If we'd keep the connection alive, the printing channel would be blocked for others. This version can be used in exercises etc.
+
 **Is your printer secure? Check before someone else does...**
 
 PRET is a new tool for printer security testing developed in the scope of a [Master's Thesis](http://nds.rub.de/media/ei/arbeiten/2017/01/13/exploiting-printers.pdf) at Ruhr University Bochum. It connects to a device via network or USB and exploits the features of a given printer language. Currently [PostScript](https://www.adobe.com/products/postscript/pdfs/PLRM.pdf), [PJL](http://h10032.www1.hp.com/ctg/Manual/bpl13208.pdf) and [PCL](http://www.hp.com/ctg/Manual/bpl13210.pdf) are supported which are spoken by most laser printers. This allows cool stuff like capturing or manipulating print jobs, accessing the printer's file system and memory or even causing physical damage to the device. All attacks are documented in detail in the [Hacking Printers Wiki](http://hacking-printers.net/wiki/).

@@ -35,11 +35,13 @@ class pjl(printer):
         if crop:
           # crop very first PJL line which is echoed by most interpreters
           str_recv = re.sub(r'^\x04?(\x00+)?@PJL.*' + c.EOL, '', str_recv)
+      self.disconnect()
       return self.pjl_err(str_recv, str_stat)
 
     # handle CTRL+C and exceptions
     except (KeyboardInterrupt, Exception) as e:
-      if not self.fuzz or not str(e): self.reconnect(str(e))
+      self.disconnect()
+      # if not self.fuzz or not str(e): self.reconnect(str(e))
       return ""
 
   # handle error messages from PJL interpreter

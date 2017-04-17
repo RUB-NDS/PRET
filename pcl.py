@@ -25,11 +25,12 @@ class pcl(printer):
       str_recv = self.recv('ECHO ' + token + '.*$', fb)
       # crop all PCL lines from received buffer
       str_recv = re.sub(r"\x0d?\x0a?\x0c?PCL.*\x0a?", '', str_recv)
+      self.disconnect()
       return str_recv
 
     # handle CTRL+C and exceptions
     except (KeyboardInterrupt, Exception) as e:
-      self.reconnect(str(e))
+      self.disconnect()
       return ""
 
   # --------------------------------------------------------------------
