@@ -56,7 +56,7 @@ class log():
     try:
       return open(filename, mode='wb')
     except IOError as e:
-      output().errmsg("Cannot open logfile", str(e))
+      output().errmsg("Cannot open logfile", e)
       return None
 
   # write raw data to logfile
@@ -66,7 +66,7 @@ class log():
       try:
         logfile.write(data)
       except IOError as e:
-        output().errmsg("Cannot log", str(e))
+        output().errmsg("Cannot log", e)
 
   # write comment to logfile
   def comment(self, logfile, line):
@@ -78,7 +78,7 @@ class log():
     try:
       logfile.close()
     except IOError as e:
-      output().errmsg("Cannot close logfile", str(e))
+      output().errmsg("Cannot close logfile", e)
 
 # ----------------------------------------------------------------------
 
@@ -87,21 +87,23 @@ class output():
   def send(self, str, mode):
     if str: print(Back.CYAN + str + Style.RESET_ALL)
     if str and mode == 'hex':
-      print(Fore.CYAN + ":".join("{:02x}".format(ord(c)) for c in str) + Style.RESET_ALL)
+      print(Fore.CYAN + conv().hex(str, ':') + Style.RESET_ALL)
 
   # show recv commands (debug mode)
   def recv(self, str, mode):
     if str: print(Back.MAGENTA + str + Style.RESET_ALL)
     if str and mode == 'hex':
-      print(Fore.MAGENTA + ":".join("{:02x}".format(ord(c)) for c in str) + Style.RESET_ALL)
+      print(Fore.MAGENTA + conv().hex(str, ':') + Style.RESET_ALL)
 
   # show information
   def info(self, msg, eol=None):
     if msg: print(Back.BLUE + msg + Style.RESET_ALL, end=eol)
+    sys.stdout.flush()
 
   # show raw data
   def raw(self, msg, eol=None):
     if msg: print(Fore.YELLOW + msg + Style.RESET_ALL, end=eol)
+    sys.stdout.flush()
 
   # show chit-chat
   def chitchat(self, msg, eol=None):
@@ -118,7 +120,10 @@ class output():
 
   # show error message
   def errmsg(self, msg, info=""):
-    if info: info = Style.RESET_ALL + Style.DIM + " (" + info + ")" + Style.RESET_ALL
+    info = str(info).strip()
+    if info: # monkeypatch to make python error message less ugly
+      info = item(re.findall('Errno -?\d+\] (.*)', info), '') or info.splitlines()[-1]
+      info = Style.RESET_ALL + Style.DIM + " (" + info.strip('<>') + ")" + Style.RESET_ALL
     if msg: print(Back.RED + msg + info)
 
   # show printer and status
@@ -186,6 +191,22 @@ class output():
     line = (date, size, user, name, soft)
     output().info('%-12s %5s  %-13s  %-22s  %-20s' % line)
 
+  # show ascii only
+  def ascii(self, data):
+    data = re.sub(r"(\x00){10}", "\x00", data) # shorten nullbyte streams
+    data = re.sub(r"([^ -~])", ".", data) # replace non-printable chars
+    self.raw(data, "")
+
+  # show binary dump
+  def dump(self, data):
+    # experimental regex to match sensitive strings like passwords
+    data = re.sub(r"[\x00-\x06,\x1e]([!-~]{6,}?(?!\\0A))\x00{16}", "START" + r"\1" + "STOP", data)
+    data = re.sub(r"\00+", "\x00", data) # ignore nullbyte streams
+    data = re.sub(r"(\x00){10}", "\x00", data) # ignore nullbyte streams
+    data = re.sub(r"([\x00-\x1f,\x7f-\xff])", ".", data)
+    data = re.sub(r"START([!-~]{6,}?)STOP", Style.RESET_ALL + Back.BLUE + r"\1" + Style.RESET_ALL + Fore.YELLOW, data)
+    self.raw(data, "")
+
   # dump ps dictionary
   def psdict(self, data, indent=''):
     reload(sys) # workaround for non-ascii output
@@ -210,13 +231,17 @@ class output():
         except: # array contains further list or dict
           # value = sum(val['value'], [])
           value, recursion = '', True
-      # value = value.encode('ascii',errors='ignore')
+      # value = value.encode('ascii', errors='ignore')
       node = '┬' if recursion else '─'
       edge = indent + ('└' if key == last else '├')
       # output current node in dictionary
       print("%s%s %-3s  %-11s  %-30s  %s" % (edge, node, perms, type, key, value))
       if recursion: # ...
         self.psdict(val['value'], indent + (' ' if key == last else '│'))
+
+  # show some information
+  def psonly(self):
+   self.chitchat("Info: This only affects jobs printed by a PostScript driver")
 
   # countdown from sec to zero
   def countdown(self, msg, sec, cmd):
@@ -267,11 +292,11 @@ class conv():
 
   # return date plus/minus given seconds
   def timediff(self, seconds):
-    return self.lsdate(self.now() + int(seconds) / 1000)
+    return self.lsdate(self.now() + self.int(seconds) / 1000)
 
   # convert size to human readble value
   def filesize(self, num):
-    num = int(num)
+    num = self.int(num)
     for unit in ['B','K','M']:
       if abs(num) < 1024.0:
         return (("%4.1f%s" if unit == 'M' else "%4.0f%s") % (num, unit)) 
@@ -280,6 +305,20 @@ class conv():
   # remove carriage return from line breaks
   def nstrip(self, data):
     return re.sub(r'\r\n', '\n', data)
+
+  # convert string to hexdecimal
+  def hex(self, data, sep=''):
+    return sep.join("{:02x}".format(ord(c)) for c in data)
+
+  # convert to ascii character
+  def chr(self, num):
+    return chr(self.int(num))
+
+  # convert to integer or zero
+  def int(self, num):
+    try: n = int(num)
+    except ValueError: n = 0
+    return n
 
 # ----------------------------------------------------------------------
 
@@ -292,7 +331,7 @@ class file():
       f.close()
       return data
     except IOError as e:
-      output().errmsg("Cannot read from file", str(e))
+      output().errmsg("Cannot read from file", e)
 
   # write to local file
   def write(self, path, data, m='wb'):
@@ -301,7 +340,7 @@ class file():
         f.write(data)
       f.close()
     except IOError as e:
-      output().errmsg("Cannot write to file", str(e))
+      output().errmsg("Cannot write to file", e)
 
   # append to local file
   def append(self, path, data):

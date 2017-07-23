@@ -65,8 +65,9 @@ class pcl(printer):
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # auto-complete dirlist for remote fs
+  options_rfiles = {}
   def complete_rfiles(self, text, line, begidx, endidx):
-    return [cat for cat in self.files if cat.startswith(text)]
+    return [cat for cat in self.options_rfiles if cat.startswith(text)]
 
   # define alias
   complete_delete = complete_rfiles # file_or_dir
@@ -94,7 +95,7 @@ class pcl(printer):
     if superblock: # de-serialize pclfs dictionary
       try: pclfs = json.loads(superblock)
       except: pass # non-existent or invalid superblock
-    self.files = pclfs
+    self.options_rfiles = pclfs
     return pclfs
 
   # ------------------------[ ls ]--------------------------------------
@@ -191,7 +192,7 @@ class pcl(printer):
     data = ''
     echo = re.findall("ECHO (\d+)", echo)
     for n in echo:
-      data += chr(int(n))
+      data += conv().chr(n)
     return data
 
   # ====================================================================

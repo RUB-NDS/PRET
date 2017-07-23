@@ -8,6 +8,8 @@ class fuzzer():
   web = ["http://127.0.0.1/"] # "http://hacking-printers.net/log.me"
   dir = ["..", "...", "...."] # also combinations like "./.."
 # sep = ["", "\\", "/", "\\\\", "//", "\\/"] 
+  fhs = ["/etc", "/bin", "/sbin", "/home", "/proc", "/dev", "/lib",
+         "/opt", "/run",  "/sys", "/tmp", "/usr", "/var",  "/mnt",]
   abs = [".profile", ["etc", "passwd"], ["bin", "sh"], ["bin", "ls"],
          "boot.ini", ["windows", "win.ini"], ["windows", "cmd.exe"]]
   rel = ["%WINDIR%\\win.ini",
@@ -23,5 +25,5 @@ class fuzzer():
 
   # define prefixes to use in fuzzing modes
   path  = vol+var+win+smb+web # path fuzzing
-  write = vol+var+win+smb     # write fuzzing
+  write = vol+var+win+smb+fhs # write fuzzing
   blind = vol+var             # blind fuzzing

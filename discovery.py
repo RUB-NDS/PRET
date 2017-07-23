@@ -114,5 +114,5 @@ class discovery():
         output().info("No printers found via SNMP broadcast")
       if usage or results: print("")
     except Exception as e:
-      output().errmsg("SNMP Error", str(e))
+      output().errmsg("SNMP Error", e)
       if usage: print("")

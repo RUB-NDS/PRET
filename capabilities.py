@@ -72,7 +72,7 @@ class capabilities():
       self.set_support(model)
       output().green("found")
     except Exception as e:
-      output().errmsg("not found", str(e))
+      output().errmsg("not found", e)
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # get capabilities via HTTP
@@ -89,7 +89,7 @@ class capabilities():
       self.set_support(model)
       output().green("found")
     except Exception as e:
-      output().errmsg("not found", str(e))
+      output().errmsg("not found", e)
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # get capabilities via SNMP
@@ -120,7 +120,7 @@ class capabilities():
     except NameError:
       output().errmsg("not found", "pysnmp module not installed")
     except Exception as e:
-      output().errmsg("not found", str(e))
+      output().errmsg("not found", e)
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # feedback on language support
   def feedback(self, support, lang):
@@ -152,5 +152,5 @@ class capabilities():
       f.close()
       return models
     except IOError as e:
-      output().errmsg("Cannot open file", str(e))
+      output().errmsg("Cannot open file", e)
       return []

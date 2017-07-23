@@ -15,8 +15,8 @@ class pjl(printer):
     str_recv = "" # response buffer
     str_stat = "" # status buffer
     token = c.DELIMITER + str(random.randrange(2**16)) # unique delimiter
-    footer = '@PJL ECHO ' + token + c.EOL + c.EOL if wait else ''
     status = '@PJL INFO STATUS' + c.EOL if self.status and wait else ''
+    footer = '@PJL ECHO ' + token + c.EOL + c.EOL if wait else ''
     # send command to printer device
     try:
       cmd_send = c.UEL + str_send + c.EOL + status + footer + c.UEL
@@ -111,7 +111,7 @@ class pjl(printer):
     str_recv = self.cmd('@PJL FSQUERY NAME="' + path + '"', True, False)
     size = re.findall("TYPE\s*=\s*FILE\s+SIZE\s*=\s*(\d*)", str_recv)
     # return file size
-    return int(item(size, c.NONEXISTENT))
+    return conv().int(item(size, c.NONEXISTENT))
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # auto-complete dirlist for remote fs
@@ -130,6 +130,7 @@ class pjl(printer):
     return [cat for cat in self.options_rfiles if cat.startswith(text)]
 
   # define alias
+  complete_append = complete_rfiles # files or directories
   complete_delete = complete_rfiles # files or directories
   complete_rm     = complete_rfiles # files or directories
   complete_get    = complete_rfiles # files or directories
@@ -137,6 +138,8 @@ class pjl(printer):
   complete_edit   = complete_rfiles # files or directories
   complete_vim    = complete_rfiles # files or directories
   complete_touch  = complete_rfiles # files or directories
+  complete_rename = complete_rfiles # files or directories
+  complete_mv     = complete_rfiles # files or directories
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # auto-complete dirlist for remote fs (directories only)
@@ -172,8 +175,9 @@ class pjl(printer):
     for item in str_recv.splitlines():
       # get directories
       dirname = re.findall("^(.*)\s+TYPE\s*=\s*DIR$", item)
-      if dirname and (dirname[0] not in (".", "..") or hidden):
-        list[dirname[0] + (c.SEP if sep else '')] = None
+      if dirname and (dirname[0] not in ("", ".", "..") or hidden):
+        sep = c.SEP if sep and dirname[0][-1:] != c.SEP else ''
+        list[dirname[0] + sep] = None
       # get files
       filename = re.findall("^(.*)\s+TYPE\s*=\s*FILE", item)
       filesize = re.findall("FILE\s+SIZE\s*=\s*(\d*)", item)
@@ -285,6 +289,7 @@ class pjl(printer):
   def do_version(self, *arg):
     "Show firmware version or serial number (from 'info config')."
     if not self.do_info('config', '.*(VERSION|FIRMWARE|SERIAL|NUMBER|MODEL).*'):
+      self.do_info('prodinfo', '', False) # some hp printers repsone to this one
       self.do_info('brfirmware', '', False) # brother requires special treatment
 
   # ------------------------[ info <category> ]-------------------------
@@ -427,6 +432,10 @@ class pjl(printer):
              + '@PJL NVRAMINIT'                 + c.EOL
              + '@PJL INITIALIZE'                + c.EOL
              + '@PJL SET SERVICEMODE=EXIT', False)
+      # this one might work on brother printers
+      self.cmd('@PJL INITIALIZE'                + c.EOL
+             + '@PJL RESET'                     + c.EOL
+             + '@PJL EXECUTE SHUTDOWN', False)
       if not self.conn._file: # in case we're connected over inet socket
         output().chitchat("This command works only for HP printers. For other vendors, try:")
         output().chitchat("snmpset -v1 -c public " + self.target + " 1.3.6.1.2.1.43.5.1.1.3.1 i 6")
@@ -461,6 +470,13 @@ class pjl(printer):
                 '"040004010105020402015E"', # pcl font list
                 '"04000401010502040201C2"'] # ps font list
     for test in pmltests: self.cmd('@PJL DMCMD ASCIIHEX=' + test, False)
+    # this one might work on brother printers
+    self.cmd('@PJL EXECUTE MAINTENANCEPRINT'  + c.EOL
+           + '@PJL EXECUTE TESTPRINT'         + c.EOL
+           + '@PJL EXECUTE DEMOPAGE'          + c.EOL
+           + '@PJL EXECUTE RESIFONT'          + c.EOL
+           + '@PJL EXECUTE PERMFONT'          + c.EOL
+           + '@PJL EXECUTE PRTCONFIG', False)
 
   # ------------------------[ format ]----------------------------------
   def do_format(self, arg):
@@ -472,11 +488,17 @@ class pjl(printer):
 
   # ------------------------[ disable ]---------------------------------
   def do_disable(self, arg):
-    "Disable printing functionality."
-    self.disable = not self.disable
-    str_disable = "OFF" if self.disable else "ON"
-    output().chitchat("Printing functionality: " + str_disable)
-    self.do_set('JOBMEDIA=' + str_disable, False)
+    jobmedia = self.cmd('@PJL DINQUIRE JOBMEDIA') or '?'
+    if '?' in jobmedia: return output().info("Not available")
+    elif 'ON' in jobmedia: self.do_set('JOBMEDIA=OFF', False)
+    elif 'OFF' in jobmedia: self.do_set('JOBMEDIA=ON', False)
+    jobmedia = self.cmd('@PJL DINQUIRE JOBMEDIA') or '?'
+    output().info("Printing is now " + jobmedia)
+
+  # define alias but do not show alias in help
+  do_enable = do_disable
+  def help_disable(self):
+    print("Disable printing functionality.")
 
   # ------------------------[ destroy ]---------------------------------
   def do_destroy(self, arg):
@@ -541,7 +563,7 @@ class pjl(printer):
           if not str_recv: return
           # collect valid memory addresses
           blocks = re.findall('ADDRESS\s*=\s*(\d+)', str_recv)
-          for addr in blocks: memspace += range(int(addr), int(addr) + bs)
+          for addr in blocks: memspace += range(conv().int(addr), conv().int(addr) + bs)
           self.chitchat(str(len(blocks)) + " blocks found. ", '')
       else: # use fixed memspace (quick & dirty but might cover interesting stuff)
         memspace = range(0, 8192) + range(32768, 33792) + range(53248, 59648)
@@ -549,17 +571,14 @@ class pjl(printer):
       # ******* dumping: read nvram and write copy to local file ******
       commands = ['@PJL RNVRAM ADDRESS=' + str(n) for n in memspace]
       self.chitchat("Writing copy to " + lpath)
+      if os.path.isfile(lpath): file().write(lpath, '') # empty file
       for chunk in (list(chunks(commands, steps))):
         str_recv = self.cmd(c.EOL.join(chunk))
-        # break on unsupported printers
-        if not str_recv: return
-        else: self.makedirs('nvram')
-        for data in re.findall('DATA\s*=\s*(\d+)', str_recv):
-          char = chr(int(data))
-          # append char to file
-          file().append(lpath, char)
-          # print char to screen
-          output().raw(char if int(data) in range(32, 127) else '.', "")
+        if not str_recv: return # break on unsupported printers
+        else: self.makedirs('nvram') # create nvram directory
+        data = ''.join([conv().chr(n) for n in re.findall('DATA\s*=\s*(\d+)', str_recv)])
+        file().append(lpath, data) # write copy of nvram to disk
+        output().dump(data) # print asciified output to screen
       print
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # read nvram (single byte)
@@ -630,7 +649,7 @@ class pjl(printer):
       try:
         keyspace = [int(arg)]
       except Exception as e:
-        output().errmsg("Invalid PIN", str(e))
+        output().errmsg("Invalid PIN", e)
         return
     # for optimal performance set steps to 500-1000 and increase timeout
     steps = 500 # set to 1 to get actual PIN (instead of just unlocking)
@@ -664,11 +683,11 @@ class pjl(printer):
 
   # ====================================================================
 
-  # ------------------------[ flood ]-----------------------------------
+  # ------------------------[ flood <size> ]----------------------------
   def do_flood(self, arg):
-    "Flood user input, may reveal buffer overflows."
-    size = 10000 # buffer size to test for
-    char = '0'   # character to fill buffer
+    "Flood user input, may reveal buffer overflows: flood <size>"
+    size = conv().int(arg) or 10000 # buffer size
+    char = '0' # character to fill the user input
     # get a list of printer-specific variables to set
     self.chitchat("Receiving PJL variables.", '')
     lines = self.cmd('@PJL INFO VARIABLES').splitlines()

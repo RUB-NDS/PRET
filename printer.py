@@ -60,9 +60,7 @@ class printer(cmd.Cmd, object):
     if newtarget:
       self.set_vol()
       self.set_traversal()
-      self.disable = False
       self.error = None
-      self.files = {}
     else:
       self.set_prompt()
 
@@ -108,7 +106,7 @@ class printer(cmd.Cmd, object):
     try:
       cmd.Cmd.onecmd(self, line)
     except Exception as e:
-      output().errmsg("Program Error", str(e))
+      output().errmsg("Program Error", e)
 
   # ====================================================================
 
@@ -190,7 +188,7 @@ class printer(cmd.Cmd, object):
       # set printer default values
       self.set_defaults(newtarget)
     except Exception as e:
-      output().errmsg("Connection to " + arg + " failed", str(e))
+      output().errmsg("Connection to " + arg + " failed", e)
       self.do_close()
       # exit if run from init function (command line)
       if mode == 'init':
@@ -223,7 +221,7 @@ class printer(cmd.Cmd, object):
       if not quiet:
         print("Device or socket timeout: " + str(self.timeout))
     except Exception as e:
-      output().errmsg("Cannot set timeout", str(e))
+      output().errmsg("Cannot set timeout", e)
 
   # send mode-specific command whith modified timeout
   def timeoutcmd(self, str_send, timeout, *stuff):
@@ -381,8 +379,8 @@ class printer(cmd.Cmd, object):
     │ [✓] sets '.' for 'dir/..', refused by ps interpreters │
     └───────────────────────────────────────────────────────┘
     '''
-    ### path = re.sub(r"(/)", "\\\\", path) ########## EPSON/SAMSUNG XXX
-    ### path = re.sub(r"(/\.\.)", "/../.", path) ########## HP
+    ### path = re.sub(r"(/)", "\\\\", path)      ### Epson/Samsung PJL
+    ### path = re.sub(r"(/\.\.)", "/../.", path) ### HP path traversal
     return path if path != '.' else ''
 
   # --------------------------------------------------------------------
@@ -501,7 +499,7 @@ class printer(cmd.Cmd, object):
       if chksum1 == chksum2: print("File not changed.")
       else: self.do_put(lpath, arg)
     except Exception as e:
-      output().errmsg("Cannot edit file - Set self.editor", str(e))
+      output().errmsg("Cannot edit file - Set self.editor", e)
     # delete temporary file
     os.remove(lpath)
 
@@ -572,9 +570,8 @@ class printer(cmd.Cmd, object):
 
   # define alias
   complete_load  = complete_lfiles # files or directories
-  complete_send  = complete_lfiles # files or directories
-  complete_print = complete_lfiles # files or directories
   complete_put   = complete_lfiles # files or directories
+  complete_print = complete_lfiles # files or directories
 
   # ====================================================================
 
@@ -601,6 +598,10 @@ class printer(cmd.Cmd, object):
     # try base pathes first
     for path in self.vol_exists() + fuzzer().path:
       self.verify_path(path, found)
+    output().raw("Checking filesystem hierarchy standard.")
+    # try direct access to fhs dirs
+    for path in fuzzer().fhs:
+      self.verify_path(path)
     # try path traversal strategies
     if found:
       output().raw("Now checking traversal strategies.")
@@ -736,25 +737,32 @@ class printer(cmd.Cmd, object):
     'Print image file or raw text:  print <file>|"text"'
     '''
     ┌──────────────────────────────────────────────────────────┐
-    │ Poor man's driverless PCL based printing (experimental)  │
-    ├──────────────────────────────────────────────────────────┤
+    │ Poor man's driverless printing (PCL based, experimental) │
+    └──────────────────────────────────────────────────────────┘
+    '''
+    if not arg: arg = raw_input('File or "text": ')
+    if arg.startswith('"'): data = arg.strip('"')     # raw text string
+    elif arg.endswith('.ps'): data = file().read(arg) # postscript file
+    else: data = self.convert(arg, 'pcl')             # anything else…
+    if data: self.send(c.UEL + data + c.UEL) # send pcl datastream to printer
+
+  # convert image to page description language
+  def convert(self, path, pdl='pcl'):
+    '''
+    ┌──────────────────────────────────────────────────────────┐
     │ Warning: ImageMagick and Ghostscript are used to convert │
     │ the document to be printed into a language understood be │
     │ the printer. Don't print anything from untrusted sources │
     │ as it may be a security risk (CVE-2016–3714, 2016-7976). │
     └──────────────────────────────────────────────────────────┘
     '''
-    if not arg: arg = raw_input('File or "text": ')
-    if arg.startswith('"'): data = arg.strip('"')     # raw text string
-    elif arg.endswith('.ps'): data = file().read(arg) # postscript file
-    else:                                             # anything else…
-      try:
-        self.chitchat("Converting '" + arg + "' to PCL")
-        pdf = ['-density', '300'] if arg.endswith('.pdf') else []
-        cmd = ['convert'] + pdf + [arg, '-quality', '100', 'pcl' + ':-']
-        out, err = subprocess.PIPE, subprocess.PIPE
-        p = subprocess.Popen(cmd, stdout=out, stderr=err)
-        data, stderr = p.communicate()
-      except: stderr = "ImageMagick or Ghostscript missing"
-      if stderr: output().errmsg("Cannot convert", item(stderr.splitlines()))
-    if data: self.send(c.UEL + data + c.UEL) # send pcl datastream to printer
+    try:
+      self.chitchat("Converting '" + path + "' to " + pdl + " format")
+      pdf = ['-density', '300'] if path.endswith('.pdf') else []
+      cmd = ['convert'] + pdf + [path, '-quality', '100', pdl + ':-']
+      out, err = subprocess.PIPE, subprocess.PIPE
+      p = subprocess.Popen(cmd, stdout=out, stderr=err)
+      data, stderr = p.communicate()
+    except: stderr = "ImageMagick or Ghostscript missing"
+    if stderr: output().errmsg("Cannot convert", stderr)
+    else: return data
