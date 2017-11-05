@@ -578,112 +578,66 @@ class postscript(printer):
     else:
       self.onecmd("help replace")
 
-# ------------------------[ capture <operation> ]-----------------------
+  # ------------------------[ capture <operation> ]---------------------
   def do_capture(self, arg):
     "Capture further jobs to be printed on this device."
-    # hooks must be the first operators in documents to be printed (CUPS strategy)
-    hook = ['currentfile', 'free {true 0 startjob} if'] # hook to alter initial vm
-    hack = ['filter', '/ASCII85Decode filter /LZWDecode filter'] # hook to capture
-    free = '5' # mem limit in megabytes that must at least be available to capture
-    path = 'capture/' # directory on printing device where to store captured files
-    '''
-    TBD: implement further hooking than strategies than CUPS (ps2write)
-    ───────────────────────────────────────────────────────────────────
-    • hooking strategies: CUPS (ps2write), WinNT ErrorHandler, BeginPage/EndPage, if/stopped
-    • content strategies: currentfile, statementedit, lineedit, stdin
-    • storage strategies: named file (raw), virtual file (compressed)
-    ┌───────────────────────────────────────────────────────────────┐
-    │                 supported capture strategies                  │
-    ├──────────────────────────┬─────────┬───────────┬───────┬──────┤
-    │ hooking/storage strategy │ stopped │ BeginPage │ WinNT │ CUPS │
-    ├──────────────────────────┼─────────┼───────────┼───────┼──────┤
-    │               named file │   TBD   │    TBD    │  TBD  │  ✓   │
-    ├──────────────────────────┼─────────┼───────────┼───────┼──────┤
-    │             virtual file │   TBD   │     -     │  TBD  │  ✓   │
-    └──────────────────────────┴─────────┴───────────┴───────┴──────┘
-    '''
+    free = '5' # memory limit in megabytes that must at least be free to capture print jobs
     # record future print jobs
     if arg.startswith('start'):
-      # get storage strategy
-      name = path + '.test'
-      self.onecmd("touch " + name)
-      storage = self.file_exists(name) != c.NONEXISTENT
-      storage = False
-      output().chitchat("Storage strategy: " + ("named" if storage else "virtual") + " file")
-      output().chitchat("Content strategy: currentfile")     # currently the only strategy we have
-      output().chitchat("Hooking strategy: CUPS (ps2write)") # currently the only strategy we have
-      if storage: self.delete(name)
-      #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      # storage strategy: named file | content strategy: currentfile | capture strategy: CUPS
-      if storage:
-        str_send = 'true 0 startjob {                                                       \n'\
-                   '/storage true def /str 32 string def                                    \n'\
-                   '/free {vmstatus exch pop exch pop 1048576 div '+free+' ge} def          \n'\
-                   '/capturehook {                                                          \n'\
-                   '  userdict /'+hook[0]+' undef '+hook[0]+'  % in case op is called again \n'\
-                   '  userdict /recursion known not {  % hooked op may occur multiple times \n'\
-                   '    /recursion true def                                                 \n'\
-                   '    (This job will be captured on (ram)disk\\n) print flush             \n'\
-                   '    %-------------------------------------------------------------------\n'\
-                   '    /strcat {exch dup length 2 index length add string dup              \n'\
-                   '    dup 4 2 roll copy length 4 -1 roll putinterval} bind def            \n'\
-                   '    %- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n'\
-                   '    /copyfile {0 mark 32000 string {4 index 1 index readstring exch 5   \n'\
-                   '    index 1 index writestring length 5 -1 roll add 4 1 roll not {exit}  \n'\
-                   '    if} loop cleartomark 3 -1 roll closefile pop closefile} bind def    \n'\
-                   '    %-------------------------------------------------------------------\n'\
-                   '    false echo                               % stop interpreter slowdown\n'\
-                   '    /timestamp realtime str cvs def          % get time from interpreter\n'\
-                   '    /capturefile {('+path+') timestamp strcat (.ps) strcat} def         \n'\
-                   '    /document {currentfile /ReusableStreamDecode filter} bind def       \n'\
-                   '    %-------------------------------------------------------------------\n'\
-                   '    capturefile (w+) file dup (%!\\n' +hook[0]+' ) writestring closefile\n'\
-                   '    document capturefile (a+) file copyfile      % save document to file\n'\
-                   '    capturefile run                              % print actual document\n'\
-                   '    free not {capturefile deletefile} if         % we are out of memory!\n'\
-                   '  } if                                                                  \n'\
-                   '} bind def                                                              \n'\
-                   '/'+ hook[0] +' {capturehook} def                                        \n'\
-                   '(Future print jobs will be captured on (ram)disk!)}                     \n'\
-                   '{(Cannot capture - unlock me first)} ifelse print'
-        output().raw(self.cmd(str_send))
-      #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      # storage strategy: virtual file | content strategy: currentfile | capture strategy: CUPS
-      else:
-        str_send = 'true 0 startjob {\n'\
-                   '/free {vmstatus exch pop exch pop 1048576 div '+free+' ge} def        \n'\
-                   '/drop {128 string readline pop pop} def % ignore a single line        \n'\
-                   '%---------------------------------------------------------------------\n'\
-                   '%--------------[ get current document as file object ]----------------\n'\
-                   '%---------------------------------------------------------------------\n'\
-                   '/document {currentfile 0 (%%EOF) /SubFileDecode                       \n'\
-                   '  filter /ReusableStreamDecode filter} bind def                       \n'\
-                   '%---------------------------------------------------------------------\n'\
-                   '/capturehook {                                                        \n'\
-                   '  (This job will be captured in memory\\n) print flush                \n'\
-                   '  false echo                            % stop interpreter slowdown   \n'\
-                   '  /timestamp realtime def               % get time from interpreter   \n'\
-                   '  (capturedict) where {pop}             % print jobs are saved here   \n'\
-                   '  {/capturedict 50000 dict def} ifelse  % define capture dictionary   \n'\
-                   '  %-------------------------------------------------------------------\n'\
-                   '  %--------------[ save document to dict and print it ]---------------\n'\
-                   '  %-------------------------------------------------------------------\n'\
-                   '  capturedict timestamp document put    % save document in dictionary \n'\
-                   '  %- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n'\
-                   '  /state save def                       % backup current vm state     \n'\
-                   '  userdict /'+hook[0]+' undef           % reset hooked operator       \n'\
-                   '  userdict /'+hack[0]+' undef           % reset hacked operator       \n'\
-                   '  capturedict timestamp get dup drop    % fetch stored document       \n'\
-                   '  dup '+hack[1]+' cvx exec cvx exec     % print actual document       \n'\
-                   '  clear cleardictstack state restore    % restore original vm state   \n'\
-                   '  %-------------------------------------------------------------------\n'\
-                   '  /free not {capturedict timestamp undef} if   % we are out of memory!\n'\
-                   '} bind def\n'\
-                   '/'+hook[0]+' {'+hook[1]+'} def\n'\
-                   '/'+hack[0]+' {capturehook} def\n'\
-                   '(Future print jobs will be captured in memory!)}\n'\
-                   '{(Cannot capture - unlock me first)} ifelse print'
-        output().raw(self.cmd(str_send))
+      output().psonly()
+      # PRET commands themself should not be capture if they're performed within ≤ 10s idle
+      '''
+      ┌──────────┬───────────────────────────────┬───────────────┐
+      │ hooking: │       BeginPage/EndPage       │ overwrite all │
+      ├──────────┼───────────────────────────────┼───────────────┤
+      │ metadat: │               ✔               │       -       │
+      ├──────────┼───────────────────────────────┼───────┬───────┤
+      │ globals: │   we are already global(?)    │ need  │ none  │
+      ├──────────┼───────────────┬───────────────┼───────┴───────┤
+      │ capture: │  currentfile  │   %lineedit   │  currentfile  │
+      ├──────────┼───────┬───────┼───────┬───────┼───────┬───────┤
+      │ storage: │ nfile │ vfile │ nfile │ array │ vfile │ nfile │
+      ├──────────┼───────┼───────┼───────┼───────┼───────┼───────┤
+      │ package: │   ✔   │   ?   │   ✔   │   ?   │   ?   │   ✔   │
+      ├──────────┼───────┼───────┼───────┼───────┼───────┼───────┤
+      │ execute: │   ✔   │   ✔   │   ✔   │   -   │   ✔   │   ✔   │
+      └──────────┴───────┴───────┴───────┴───────┴───────┴───────┘
+      '''
+      str_send = 'true 0 startjob {                                                     \n'\
+                 '/setoldtime {/oldtime realtime def} def setoldtime                    \n'\
+                 '/threshold {realtime oldtime sub abs 10000 lt} def                    \n'\
+                 '/free {vmstatus exch pop exch pop 1048576 div '+free+' ge} def        \n'\
+                 '%---------------------------------------------------------------------\n'\
+                 '%--------------[ get current document as file object ]----------------\n'\
+                 '%---------------------------------------------------------------------\n'\
+                 '/document {(%stdin) (r) file /ReusableStreamDecode filter} bind def   \n'\
+                 '%---------------------------------------------------------------------\n'\
+                 '/capturehook {{                                                       \n'\
+                 '  threshold {(Within threshold - will not capture\\n) print flush     \n'\
+                 '  setoldtime                                                          \n'\
+                 '}{                                                                    \n'\
+                 '  setoldtime                                                          \n'\
+                 '  free not {(Out of memory\\n) print flush}{                          \n'\
+                 '  (This job will be captured in memory\\n) print flush                \n'\
+                 '  setoldtime                                                          \n'\
+                 '  false echo                            % stop interpreter slowdown   \n'\
+                 '  /timestamp realtime def               % get time from interpreter   \n'\
+                 '  userdict /capturedict known not       % print jobs are saved here   \n'\
+                 '  {/capturedict 50000 dict def} if      % define capture dictionary   \n'\
+                 '  %-------------------------------------------------------------------\n'\
+                 '  %--------------[ save document to dict and print it ]---------------\n'\
+                 '  %-------------------------------------------------------------------\n'\
+                 '  capturedict timestamp document put    % store document in memory    \n'\
+                 '  capturedict timestamp get cvx exec    % print the actual document   \n'\
+                 '  clear cleardictstack                  % restore original vm state   \n'\
+                 '  %-------------------------------------------------------------------\n'\
+                 '  setoldtime                                                          \n'\
+                 '  } ifelse} ifelse} stopped} bind def                                 \n'\
+                 '} ifelse} ifelse} bind def                                            \n'\
+                 '<< /BeginPage {capturehook} bind >> setpagedevice                     \n'\
+                 '(Future print jobs will be captured in memory!)}                      \n'\
+                 '{(Cannot capture - unlock me first)} ifelse print'
+      output().raw(self.cmd(str_send))
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # show captured print jobs
     elif arg.startswith('list'):
@@ -691,48 +645,38 @@ class postscript(printer):
       vmem = self.cmd('vmstatus exch pop exch pop 32 string cvs print')
       output().chitchat("Free virtual memory: " + conv().filesize(vmem)
         + " | Limit to capture: " + conv().filesize(int(free) * 1048576))
-      output().warning(self.cmd('currentdict /free known {free not\n'
+      output().warning(self.cmd('userdict /free known {free not\n'
         '{(Memory almost full, will not capture jobs anymore) print} if}\n'
         '{(Capturing print jobs is currently not active) print} ifelse'))
-      #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      storage = 'true' in self.cmd('(storage) where ==')
-      if storage:
-        self.onecmd("ls capture")
-      else:
-        # get first 100 lines for each captured job
-        str_recv = self.cmd(
-          '(capturedict) where {capturedict\n'
-          '{ exch realtime sub (Date: ) print == dup          % get time diff\n'
-          '  resetfile (Size: ) print dup bytesavailable ==   % get file size\n'
-          '  100 {dup 128 string readline {(%%) anchorsearch  % get metadata\n'
-          '  {exch print (\\n) print} if pop}{pop exit} ifelse} repeat pop\n'
-          '  (' + c.DELIMITER + '\\n) print\n'
-          '} forall pop} if')
-        # grep for metadata in captured jobs
-        jobs = []
-        for val in filter(None, str_recv.split(c.DELIMITER)):
-          date = conv().timediff(item(re.findall('Date: (.*)', val)))
-          size = conv().filesize(item(re.findall('Size: (.*)', val)))
-          user = item(re.findall('For: (.*)', val))
-          name = item(re.findall('Title: (.*)', val))
-          soft = item(re.findall('Creator: (.*)', val))
-          jobs.append((date, size, user, name, soft))
-        # output metadata for captured jobs
-        if jobs:
-          output().joblist(('date', 'size', 'user', 'jobname', 'creator'))
-          output().hline(79)
-          for job in jobs: output().joblist(job)
+      # get first 100 lines for each captured job
+      str_recv = self.cmd(
+        'userdict /capturedict known {capturedict\n'
+        '{ exch realtime sub (Date: ) print == dup          % get time diff\n'
+        '  resetfile (Size: ) print dup bytesavailable ==   % get file size\n'
+        '  100 {dup 128 string readline {(%%) anchorsearch  % get metadata\n'
+        '  {exch print (\\n) print} if pop}{pop exit} ifelse} repeat pop\n'
+        '  (' + c.DELIMITER + '\\n) print\n'
+        '} forall clear} if')
+      # grep for metadata in captured jobs
+      jobs = []
+      for val in filter(None, str_recv.split(c.DELIMITER)):
+        date = conv().timediff(item(re.findall('Date: (.*)', val)))
+        size = conv().filesize(item(re.findall('Size: (.*)', val)))
+        user = item(re.findall('For: (.*)', val))
+        name = item(re.findall('Title: (.*)', val))
+        soft = item(re.findall('Creator: (.*)', val))
+        jobs.append((date, size, user, name, soft))
+      # output metadata for captured jobs
+      if jobs:
+        output().joblist(('date', 'size', 'user', 'jobname', 'creator'))
+        output().hline(79)
+        for job in jobs: output().joblist(job)
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # save captured print jobs
     elif arg.startswith('fetch'):
-      storage = 'true' in self.cmd('(storage) where ==')
-      if storage:
-        jobs = self.cmd('/str 256 string def ('+path+'*) {==} str filenameforall').splitlines()
-        if not jobs: output().raw("No jobs captured")
-        else: self.onecmd("mirror capture")
+      jobs = self.cmd('userdict /capturedict known {capturedict {exch ==} forall} if').splitlines()
+      if not jobs: output().raw("No jobs captured")
       else:
-        jobs = self.cmd('(capturedict) where {capturedict {exch ==} forall} if').splitlines()
-        if not jobs: output().raw("No jobs captured")
         for job in jobs:
           # is basename sufficient to sanatize file names? we'll see…
           target, job = self.basename(self.target), self.basename(job)
@@ -741,7 +685,7 @@ class postscript(printer):
           self.makedirs(root)
           # download captured job
           output().raw("Receiving " + lpath)
-          data = '%!\ncurrentfile /ASCII85Decode filter'
+          data = '%!\n'
           data += self.cmd('/byte (0) def\n'
             'capturedict ' + job + ' get dup resetfile\n'
             '{dup read {byte exch 0 exch put\n'
@@ -751,39 +695,29 @@ class postscript(printer):
           print(str(len(data)) + " bytes received.")
           # write to local file
           if lpath and data: file().write(lpath, data)
-      if jobs:
-        reader = 'any PostScript reader'
-        if sys.platform == 'darwin': reader = 'Preview.app'       # OS X
-        if sys.platform.startswith('linux'): reader = 'Evince'    # Linux
-        if sys.platform in ['win32', 'cygwin']: reader = 'GSview' # Windows
-        self.chitchat("Saved jobs can be opened with " + reader)
+      # be user-friendly and show some info on how to open captured jobs
+      reader = 'any PostScript reader'
+      if sys.platform == 'darwin': reader = 'Preview.app'       # OS X
+      if sys.platform.startswith('linux'): reader = 'Evince'    # Linux
+      if sys.platform in ['win32', 'cygwin']: reader = 'GSview' # Windows
+      self.chitchat("Saved jobs can be opened with " + reader)
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # reprint saved print jobs
     elif arg.endswith('print'):
       output().raw(self.cmd(
        '/str 256 string def /count 0 def\n'
-       '/showmsg {(printing...\\n) print} def\n'
        '/increment {/count 1 count add def} def\n'
-       '/drop {128 string readline pop pop} def\n'
-       'userdict /'+hook[0]+' undef\n'\
-       'userdict /'+hack[0]+' undef\n'\
-       '(storage) where\n'
-       '{('+path+'*) {showmsg run increment} str filenameforall}\n'
-       '{(capturedict) where {capturedict {showmsg dup resetfile dup\n'
-       ' drop dup '+hack[1]+' cvx exec cvx exec increment} forall} if\n'
-       '} ifelse\n'
-       'count 0 eq {(No jobs captured) print}\n'
-       '{count str cvs print ( jobs reprinted) print} ifelse'))
+       '/msg {(Reprinting recorded job ) print count str\n'
+       'cvs print ( of ) print total str cvs print (\\n) print} def\n'
+       'userdict /capturedict known {/total capturedict length def\n'
+       'capturedict {increment msg dup resetfile cvx exec} forall} if\n'
+       'count 0 eq {(No jobs captured) print} if'))
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # end capturing print jobs
     elif arg.startswith('stop'):
       output().raw("Stopping job capture, deleting recorded jobs")
-      self.globalcmd('/str 256 string def ('+path+'*)\n'
-                     '{deletefile} str filenameforall\n'
-                     'userdict /'+hook[0]+' undef\n'
-                     'userdict /'+hack[0]+' undef\n'
-                     'userdict /capturedict undef\n'
-                     'userdict /storage undef')
+      self.globalcmd('<< /BeginPage {} bind /EndPage {} bind >>\n'
+                     'setpagedevice userdict /capturedict undef\n')
     else:
       self.help_capture()
 
