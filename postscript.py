@@ -618,7 +618,7 @@ class postscript(printer):
                  '}{                                                                    \n'\
                  '  setoldtime                                                          \n'\
                  '  free not {(Out of memory\\n) print flush}{                          \n'\
-                 '  (This job will be captured in memory\\n) print flush                \n'\
+                 '  % (This job will be captured in memory\\n) print flush              \n'\
                  '  setoldtime                                                          \n'\
                  '  false echo                            % stop interpreter slowdown   \n'\
                  '  /timestamp realtime def               % get time from interpreter   \n'\

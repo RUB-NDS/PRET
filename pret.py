@@ -32,7 +32,7 @@ def intro(quiet):
   if not quiet:
     print("      ________________                                             ")
     print("    _/_______________/|                                            ")
-    print("   /___________/___//||   PRET | Printer Exploitation Toolkit v0.39")
+    print("   /___________/___//||   PRET | Printer Exploitation Toolkit v0.40")
     print("  |===        |----| ||    by Jens Mueller <jens.a.mueller@rub.de> ")
     print("  |           |   ô| ||                                            ")
     print("  |___________|   ô| ||                                            ")
