@@ -112,7 +112,7 @@ class postscript(printer):
         # break on postscript error message
         if re.search(c.PS_FLUSH, str_recv): break
       	# simulate command prompt
-      	print(self.prompt + cmd)
+      	print(cmd)
       	# execute command with premcd
       	self.send(self.precmd(cmd) + "\n")
       while True:
