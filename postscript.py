@@ -92,6 +92,44 @@ class postscript(printer):
     # reconnect with new conn object
     self.reconnect(None)
 
+  # ------------------------[ shell from file ]-----------------------------------
+  #Open a postscript shell and immediately run shell comands from file
+  def do_shellfile(self, arg):
+    "Open interactive PostScript shell."
+    # politely request poor man's remote postscript shell
+    output().info("Launching PostScript shell. Press CTRL+D to exit.")
+    try:
+      self.send(c.UEL + c.PS_HEADER + "false echo executive\n")
+    #"Run commands from file:  load cmd.txt"
+      if not arg:
+      	arg = raw_input("File: ")
+      data = file().read(arg) or ""
+      for cmd in data.splitlines():
+        # use postscript prompt or error message as delimiter
+        str_recv = self.recv(c.PS_PROMPT + "$|" + c.PS_FLUSH, False, False)
+        # output raw response from printer
+        output().raw(str_recv, "")
+        # break on postscript error message
+        if re.search(c.PS_FLUSH, str_recv): break
+      	# simulate command prompt
+      	print(self.prompt + cmd)
+      	# execute command with premcd
+      	self.send(self.precmd(cmd) + "\n")
+      while True:
+        # use postscript prompt or error message as delimiter
+        str_recv = self.recv(c.PS_PROMPT + "$|" + c.PS_FLUSH, False, False)
+        # output raw response from printer
+        output().raw(str_recv, "")
+        # break on postscript error message
+        if re.search(c.PS_FLUSH, str_recv): break
+        # fetch user input and send it to postscript shell
+        self.send(raw_input("") + "\n")
+    # handle CTRL+C and exceptions
+    except (EOFError, KeyboardInterrupt) as e:
+      pass
+    # reconnect with new conn object
+    self.reconnect(None)
+
   # --------------------------------------------------------------------
   # check if remote volume exists
   def vol_exists(self, vol=''):
