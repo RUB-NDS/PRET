@@ -633,7 +633,6 @@ class postscript(printer):
                  '  %-------------------------------------------------------------------\n'\
                  '  setoldtime                                                          \n'\
                  '  } ifelse} ifelse} stopped} bind def                                 \n'\
-                 '} ifelse} ifelse} bind def                                            \n'\
                  '<< /BeginPage {capturehook} bind >> setpagedevice                     \n'\
                  '(Future print jobs will be captured in memory!)}                      \n'\
                  '{(Cannot capture - unlock me first)} ifelse print'
