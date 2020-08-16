@@ -16,7 +16,7 @@ from pcl import pcl
 def usage():
   parser = argparse.ArgumentParser(description="Printer Exploitation Toolkit.")
   parser.add_argument("target", help="printer device or hostname")
-  parser.add_argument("mode", choices=['ps','pjl','pcl'], help="printing language to abuse")
+  parser.add_argument("mode", choices=['ps','pjl','pcl'], ?="printing language to abuse")
   parser.add_argument("-s", "--safe", help="verify if language is supported", action="store_true")
   parser.add_argument("-q", "--quiet", help="suppress warnings and chit-chat", action="store_true")
   parser.add_argument("-d", "--debug", help="enter debug mode (show traffic)", action="store_true")
@@ -33,7 +33,7 @@ def intro(quiet):
     print("      ________________                                             ")
     print("    _/_______________/|                                            ")
     print("   /___________/___//||   PRET | Printer Exploitation Toolkit v0.40")
-    print("  |===        |----| ||    by Jens Mueller <jens.a.mueller@rub.de> ")
+    print("  |===        |----| ||    Edit By White Hat Myanmar Teenager> ")
     print("  |           |   ô| ||                                            ")
     print("  |___________|   ô| ||                                            ")
     print("  | ||/.´---.||    | ||      「 pentesting tool that made          ")
