@@ -95,7 +95,7 @@ class printer(cmd.Cmd, object):
       log().comment(self.logfile, line)
       # only let "offline" functions pass if not connected
       if self.conn == None:
-        print(self.offline_str)
+        print((self.offline_str))
         return os.linesep
     # finally return original command
     return line
@@ -130,7 +130,7 @@ class printer(cmd.Cmd, object):
     # set hex mode (= ascii + hexdump)
     if arg == 'hex': self.debug = 'hex'
     if self.conn: self.conn.debug = self.debug
-    print("Debug mode on" if self.debug else "Debug mode off")
+    print(("Debug mode on" if self.debug else "Debug mode off"))
 
   # ====================================================================
 
@@ -138,11 +138,11 @@ class printer(cmd.Cmd, object):
   def do_load(self, arg):
     "Run commands from file:  load cmd.txt"
     if not arg:
-      arg = raw_input("File: ")
+      arg = eval(input("File: "))
     data = file().read(arg) or ""
     for cmd in data.splitlines():
       # simulate command prompt
-      print(self.prompt + cmd)
+      print((self.prompt + cmd))
       # execute command with premcd
       self.onecmd(self.precmd(cmd))
 
@@ -169,7 +169,7 @@ class printer(cmd.Cmd, object):
   def do_open(self, arg, mode=""):
     "Connect to remote device:  open <target>"
     if not arg:
-      arg = raw_input("Target: ")
+      arg = eval(input("Target: "))
     # open connection
     try:
       newtarget = (arg != self.target)
@@ -177,7 +177,7 @@ class printer(cmd.Cmd, object):
       self.conn = conn(self.mode, self.debug, self.quiet)
       self.conn.timeout(self.timeout)
       self.conn.open(arg)
-      print("Connection to " + arg + " established")
+      print(("Connection to " + arg + " established"))
       # hook method executed after successful connection
       self.on_connect(mode)
       # show some information about the device
@@ -219,7 +219,7 @@ class printer(cmd.Cmd, object):
         if self.conn: self.conn.timeout(float(arg))
         self.timeout = float(arg)
       if not quiet:
-        print("Device or socket timeout: " + str(self.timeout))
+        print(("Device or socket timeout: " + str(self.timeout)))
     except Exception as e:
       output().errmsg("Cannot set timeout", e)
 
@@ -264,11 +264,11 @@ class printer(cmd.Cmd, object):
   def do_chvol(self, arg):
     "Change remote volume:  chvol <volume>"
     if not arg:
-      arg = raw_input("Volume: ")
+      arg = eval(input("Volume: "))
     if arg and self.vol_exists(arg):
       if self.mode == 'ps':  self.set_vol('%' + arg.strip('%') + '%')
       if self.mode == 'pjl': self.set_vol(arg[0] + ':' + c.SEP)
-      print("Volume changed to " + self.vol)
+      print(("Volume changed to " + self.vol))
     else:
       print("Volume not available")
 
@@ -296,7 +296,7 @@ class printer(cmd.Cmd, object):
     "Set path traversal:  traversal <path>"
     if not arg or self.dir_exists(self.tpath(arg)):
       self.set_traversal(arg)
-      print("Path traversal " + ("" if arg else "un") + "set.")
+      print(("Path traversal " + ("" if arg else "un") + "set."))
     else:
       print("Cannot use this path traversal.")
 
@@ -395,7 +395,7 @@ class printer(cmd.Cmd, object):
   def do_get(self, arg, lpath="", r=True):
     "Receive file:  get <file>"
     if not arg:
-      arg = raw_input("Remote file: ")
+      arg = eval(input("Remote file: "))
     if not lpath:
       lpath = self.basename(arg)
     path = self.rpath(arg) if r else arg
@@ -409,19 +409,19 @@ class printer(cmd.Cmd, object):
       # write to local file
       file().write(lpath, data)
       if lsize == rsize:
-        print(str(lsize) + " bytes received.")
+        print((str(lsize) + " bytes received."))
       else:
         self.size_mismatch(rsize, lsize)
 
   def size_mismatch(self, size1, size2):
     size1, size2 = str(size1), str(size2)
-    print("Size mismatch (should: " + size1 + ", is: " + size2 + ").")
+    print(("Size mismatch (should: " + size1 + ", is: " + size2 + ")."))
 
   # ------------------------[ put <local file> ]------------------------
   def do_put(self, arg, rpath=""):
     "Send file:  put <local file>"
     if not arg:
-      arg = raw_input("Local file: ")
+      arg = eval(input("Local file: "))
     if not rpath:
       rpath = os.path.basename(arg)
     rpath = self.rpath(rpath)
@@ -433,7 +433,7 @@ class printer(cmd.Cmd, object):
       lsize = len(data)
       rsize = self.file_exists(rpath)
       if rsize == lsize:
-        print(str(rsize) + " bytes transferred.")
+        print((str(rsize) + " bytes transferred."))
       elif rsize == c.NONEXISTENT:
         print("Permission denied.")
       else:
@@ -455,14 +455,14 @@ class printer(cmd.Cmd, object):
   def do_touch(self, arg):
     "Update file timestamps:  touch <file>"
     if not arg:
-      arg = raw_input("Remote file: ")
+      arg = eval(input("Remote file: "))
     rpath = self.rpath(arg)
     self.append(rpath, '')
 
   # ------------------------[ delete <file> ]---------------------------
   def do_delete(self, arg):
     if not arg:
-      arg = raw_input("File: ")
+      arg = eval(input("File: "))
     self.delete(arg)
 
   # define alias but do not show alias in help
@@ -475,7 +475,7 @@ class printer(cmd.Cmd, object):
   def do_cat(self, arg):
     "Output remote file to stdout:  cat <file>"
     if not arg:
-      arg = raw_input("Remote file: ")
+      arg = eval(input("Remote file: "))
     path = self.rpath(arg)
     str_recv = self.get(path)
     if str_recv != c.NONEXISTENT:
@@ -683,7 +683,7 @@ class printer(cmd.Cmd, object):
     output().fuzzed(path, "", ('', opt1, opt2))
     if opt2: # DIRLIST successful
       # add path if not already listed
-      if dir2 not in found.values():
+      if dir2 not in list(found.values()):
         found[path] = dir2
         output().raw("Listing directory.")
         self.do_ls(path)
@@ -728,7 +728,7 @@ class printer(cmd.Cmd, object):
   def do_site(self, arg):
     "Execute custom command on printer:  site <command>"
     if not arg:
-      arg = raw_input("Command: ")
+      arg = eval(input("Command: "))
     str_recv = self.cmd(arg)
     output().info(str_recv)
 
@@ -740,7 +740,7 @@ class printer(cmd.Cmd, object):
     │ Poor man's driverless printing (PCL based, experimental) │
     └──────────────────────────────────────────────────────────┘
     '''
-    if not arg: arg = raw_input('File or "text": ')
+    if not arg: arg = eval(input('File or "text": '))
     if arg.startswith('"'): data = arg.strip('"')     # raw text string
     elif arg.endswith('.ps'): data = file().read(arg) # postscript file
     else: data = self.convert(arg, 'pcl')             # anything else…

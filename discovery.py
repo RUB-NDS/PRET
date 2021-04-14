@@ -108,7 +108,7 @@ class discovery():
         print("")
         output().discover(('address', ('device', 'uptime', 'status', None)))
         output().hline(79)
-        for printer in sorted(results.items(), key=lambda item: socket.inet_aton(item[0])):
+        for printer in sorted(list(results.items()), key=lambda item: socket.inet_aton(item[0])):
           output().discover(printer)
       else:
         output().info("No printers found via SNMP broadcast")

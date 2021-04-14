@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # python standard library
-from __future__ import print_function
+
 from socket import socket
 import sys, os, re, stat, math, time, datetime
+import importlib
 
 # third party modules
 try: # unicode monkeypatch for windoze
@@ -45,7 +46,7 @@ def item(mylist, alternative=""):
 
 # split list into chunks of equal size
 def chunks(l, n):
-  for i in xrange(0, len(l), n):
+  for i in range(0, len(l), n):
     yield l[i:i+n]
 
 # ----------------------------------------------------------------------
@@ -127,7 +128,8 @@ class output():
     if msg: print(Back.RED + msg + info)
 
   # show printer and status
-  def discover(self, (ipaddr, (device, uptime, status, prstat))):
+  def discover(self, xxx_todo_changeme):
+    (ipaddr, (device, uptime, status, prstat)) = xxx_todo_changeme
     ipaddr = output().strfit(ipaddr, 15)
     device = output().strfit(device, 27)
     uptime = output().strfit(uptime,  8)
@@ -184,7 +186,8 @@ class output():
       self.info("%-35s %-12s %-7s %-7s %-7s" % ((path, cmd) + opt))
 
   # show captured jobs
-  def joblist(self, (date, size, user, name, soft)):
+  def joblist(self, xxx_todo_changeme1):
+    (date, size, user, name, soft) = xxx_todo_changeme1
     user = output().strfit(user, 13)
     name = output().strfit(name, 22)
     soft = output().strfit(soft, 20)
@@ -209,13 +212,13 @@ class output():
 
   # dump ps dictionary
   def psdict(self, data, indent=''):
-    reload(sys) # workaround for non-ascii output
+    importlib.reload(sys) # workaround for non-ascii output
     sys.setdefaultencoding('UTF8')
     # convert list to dictionary with indices as keys
     if isinstance(data, list):
       data = dict(enumerate(data))
     # data now is expected to be a dictionary
-    if len(data.keys()) > 0: last = sorted(data.keys())[-1]
+    if len(list(data.keys())) > 0: last = sorted(data.keys())[-1]
     for key, val in sorted(data.items()):
       type  = val['type'].replace('type', '')
       value = val['value']
@@ -247,7 +250,7 @@ class output():
   def countdown(self, msg, sec, cmd):
     try:
       sys.stdout.write(msg)
-      for x in reversed(range(1, sec+1)):
+      for x in reversed(list(range(1, sec+1))):
         sys.stdout.write(" " + str(x))
         sys.stdout.flush()
         time.sleep(1)
@@ -516,7 +519,7 @@ class const(): # define constants
   PCL_HEADER  = '@PJL ENTER LANGUAGE = PCL' + EOL + ESC
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   SUPERBLOCK  = '31337' # define super macro id to contain pclfs table
-  BLOCKRANGE  = range(10000,20000) # use those macros for file content
+  BLOCKRANGE  = list(range(10000,20000)) # use those macros for file content
   FILE_EXISTS = -1 # file size to be returned if file/dir size unknown
   NONEXISTENT = -2 # file size to be returned if a file does not exist
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

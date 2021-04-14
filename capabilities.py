@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # python standard library
-import re, os, sys, urllib2
+import re, os, sys, urllib.request, urllib.error, urllib.parse
 
 # local pret classes
 from helper import output, item
@@ -48,7 +48,7 @@ class capabilities():
     self.feedback(self.support, lang[0])
     # in safe mode, exit if unsupported
     if args.safe and not self.support:
-      print(os.linesep + "Quitting as we are in safe mode.")
+      print((os.linesep + "Quitting as we are in safe mode."))
       sys.exit()
     print("")
 
@@ -61,14 +61,14 @@ class capabilities():
       body = ("\x01\x01\x00\x0b\x00\x01\xab\x10\x01G\x00\x12attributes-charset\x00\x05utf-8H"
             + "\x00\x1battributes-natural-language\x00\x02enE\x00\x0bprinter-uri\x00\x14ipp:"
             + "//localhost/ipp/D\x00\x14requested-attributes\x00\x13printer-description\x03")
-      request  = urllib2.Request("http://" + host + ":631/",
+      request  = urllib.request.Request("http://" + host + ":631/",
                  data=body, headers={'Content-type': 'application/ipp'})
-      response = urllib2.urlopen(request, timeout=self.timeout).read()
+      response = urllib.request.urlopen(request, timeout=self.timeout).read()
       # get name of device
       model = item(re.findall("MDL:(.+?);", response)) # e.g. MDL:hp LaserJet 4250
       # get language support
       langs = item(re.findall("CMD:(.+?);", response)) # e.g. CMD:PCL,PJL,POSTSCRIPT
-      self.support = filter(None, [re.findall(re.escape(pdl), langs, re.I) for pdl in lang])
+      self.support = [_f for _f in [re.findall(re.escape(pdl), langs, re.I) for pdl in lang] if _f]
       self.set_support(model)
       output().green("found")
     except Exception as e:
@@ -80,7 +80,7 @@ class capabilities():
     try:
       # poor man's way get http title
       sys.stdout.write("Checking for HTTP support:        ")
-      html = urllib2.urlopen("http://" + host, timeout=self.timeout).read()
+      html = urllib.request.urlopen("http://" + host, timeout=self.timeout).read()
       # cause we are to parsimonious to import BeautifulSoup ;)
       title = re.findall("<title.*?>\n?(.+?)\n?</title>", html, re.I|re.M|re.S)
       # get name of device
@@ -114,7 +114,7 @@ class capabilities():
       model = item(desc)
       # get language support
       langs = ','.join(pdls)
-      self.support = filter(None, [re.findall(re.escape(pdl), langs, re.I) for pdl in lang])
+      self.support = [_f for _f in [re.findall(re.escape(pdl), langs, re.I) for pdl in lang] if _f]
       self.set_support(model)
       output().green("found")
     except NameError:
@@ -141,14 +141,14 @@ class capabilities():
     │ 'd' (duplex), 't' (tray), 'c' (color), 'n' (network). │
     └───────────────────────────────────────────────────────┘
     '''
-    self.support = filter(None, [re.findall(re.escape(m), model, re.I) for m in self.models])
+    self.support = [_f for _f in [re.findall(re.escape(m), model, re.I) for m in self.models] if _f]
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # open database of supported devices
   def get_models(self, file):
     try:
       with open(self.rundir + "db" + os.path.sep + file, 'r') as f:
-        models = filter(None, (line.strip() for line in f))
+        models = [_f for _f in (line.strip() for line in f) if _f]
       f.close()
       return models
     except IOError as e:

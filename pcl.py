@@ -59,7 +59,7 @@ class pcl(printer):
   # check if remote file exists
   def file_exists(self, path):
     pclfs = self.dirlist()
-    for name, (id, size, date) in pclfs.items():
+    for name, (id, size, date) in list(pclfs.items()):
       if path == name: return int(size)
     return c.NONEXISTENT
 
@@ -126,7 +126,7 @@ class pcl(printer):
   # ------------------------[ get <file> ]------------------------------
   def get(self, path, size=None):
     pclfs = self.dirlist()
-    for name, (id, size, date) in pclfs.items():
+    for name, (id, size, date) in list(pclfs.items()):
       if path == name:
         str_recv = self.retrieve_data(id)
         return (int(size), str_recv)
