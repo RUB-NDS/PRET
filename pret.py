@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
@@ -23,7 +24,7 @@ def usage():
   parser.add_argument("-i", "--load", metavar="file", help="load and run commands from file")
   parser.add_argument("-o", "--log", metavar="file", help="log raw data sent to the target")
   if len(sys.argv) < 2: discovery(True) # list local printers if no arguments given at all
-  if len(sys.argv) == 2: print("No printer language given, please select one" + os.linesep)
+  if len(sys.argv) == 2: print(("No printer language given, please select one" + os.linesep))
   return parser.parse_args()
 
 # ----------------------------------------------------------------------

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys, json, curses
 import npyscreen
 
@@ -38,7 +39,7 @@ class SearchButton(npyscreen.MiniButtonPress):
 class DictList(npyscreen.MLTree):
 
     def filter_value(self, index):
-        return self._filter in ''.join(self._get_content(self.display_value(self.values[index])).values())
+        return self._filter in ''.join(list(self._get_content(self.display_value(self.values[index])).values()))
 
     def update(self, clear = False):
         try:
@@ -70,7 +71,7 @@ class ValueEdit(npyscreen.MultiLineEdit):
 
     def adjust_widgets(self):
         self.color = 'DANGER'
-        print 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+        print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
 
 
 class Value(npyscreen.BoxTitle):
@@ -107,7 +108,7 @@ class Browser(npyscreen.NPSAppManaged):
             filter = ''
 
         if isinstance(data, dict):
-            for key, val in data.items():
+            for key, val in list(data.items()):
                 recursion = False
                 type = val['type']
                 perms = val['perms']

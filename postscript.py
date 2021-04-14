@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # python standard library
@@ -85,7 +86,7 @@ class postscript(printer):
         # break on postscript error message
         if re.search(c.PS_FLUSH, str_recv): break
         # fetch user input and send it to postscript shell
-        self.send(raw_input("") + "\n")
+        self.send(eval(input("")) + "\n")
     # handle CTRL+C and exceptions
     except (EOFError, KeyboardInterrupt) as e:
       pass
@@ -193,7 +194,7 @@ class postscript(printer):
   def do_mkdir(self, arg):
     "Create remote directory:  mkdir <path>"
     if not arg:
-      arg = raw_input("Directory: ")
+      arg = eval(input("Directory: "))
     # writing to dir/file should automatically create dir/
     # .dirfile is not deleted as empty dirs are not listed
     self.put(self.rpath(arg) + c.SEP + '.dirfile', '')
@@ -368,7 +369,7 @@ class postscript(printer):
   def do_lock(self, arg):
     "Set startjob and system parameters password."
     if not arg:
-      arg = raw_input("Enter password: ")
+      arg = eval(input("Enter password: "))
     self.cmd('<< /Password () '
              '/SystemParamsPassword (' + arg + ') ' # harmless settings
              '/StartJobPassword (' + arg + ') '     # alter initial vm!
@@ -488,7 +489,7 @@ class postscript(printer):
                        '  value count ' + cycles + ' eq {exit} if\n'
                        '} loop', False)
         self.chitchat("\rNVRAM write cycles: " + str(n*int(cycles)), '')
-      print # echo newline if we get this far
+      print() # echo newline if we get this far
 
   # ------------------------[ hang ]------------------------------------
   def do_hang(self, arg):
@@ -503,7 +504,7 @@ class postscript(printer):
   # ------------------------[ overlay <file> ]--------------------------
   def do_overlay(self, arg):
     "Put overlay image on all hard copies:  overlay <file>"
-    if not arg: arg = raw_input('File: ')
+    if not arg: arg = eval(input('File: '))
     if arg.endswith('ps'): data = file().read(arg) # already ps/eps file
     else:
       self.chitchat("For best results use a file from the overlays/ directory")
@@ -545,7 +546,7 @@ class postscript(printer):
     print("Put printer graffiti on all hard copies:  cross <font> <text>")
     print("Read the docs on how to install custom fonts. Available fonts:")
     if len(self.options_cross) > 0: last = sorted(self.options_cross)[-1]
-    for font in sorted(self.options_cross): print(('└─ ' if font == last else '├─ ') + font)
+    for font in sorted(self.options_cross): print((('└─ ' if font == last else '├─ ') + font))
 
   fontdir = os.path.dirname(os.path.realpath(__file__))\
           + os.path.sep + 'fonts' + os.path.sep
@@ -658,7 +659,7 @@ class postscript(printer):
         '} forall clear} if')
       # grep for metadata in captured jobs
       jobs = []
-      for val in filter(None, str_recv.split(c.DELIMITER)):
+      for val in [_f for _f in str_recv.split(c.DELIMITER) if _f]:
         date = conv().timediff(item(re.findall('Date: (.*)', val)))
         size = conv().filesize(item(re.findall('Size: (.*)', val)))
         user = item(re.findall('For: (.*)', val))
@@ -691,7 +692,7 @@ class postscript(printer):
             '(%stdout) (w) file byte writestring}\n'
             '{exit} ifelse} loop')
           data = conv().nstrip(data) # remove carriage return chars
-          print(str(len(data)) + " bytes received.")
+          print((str(len(data)) + " bytes received."))
           # write to local file
           if lpath and data: file().write(lpath, data)
       # be user-friendly and show some info on how to open captured jobs
@@ -847,7 +848,7 @@ class postscript(printer):
     # print("If <dict> is empty, the whole dictionary stack is dumped.")
     print("Standard PostScript dictionaries:")
     if len(self.options_dump) > 0: last = self.options_dump[-1]
-    for dict in self.options_dump: print(('└─ ' if dict == last else '├─ ') + dict)
+    for dict in self.options_dump: print((('└─ ' if dict == last else '├─ ') + dict))
 
   # undocumented ... what about proprietary dictionary names?
   options_dump = ('systemdict', 'statusdict', 'userdict', 'globaldict',
@@ -952,7 +953,7 @@ class postscript(printer):
   def clean_json(self, string):
     string = re.sub(",[ \t\r\n]+}", "}", string)
     string = re.sub(",[ \t\r\n]+\]", "]", string)
-    return unicode(string, errors='ignore')
+    return str(string, errors='ignore')
 
   # ------------------------[ resource <category> [dump] ]--------------
   def do_resource(self, arg):
@@ -974,7 +975,7 @@ class postscript(printer):
     print("List or dump PostScript resource:  resource <category> [dump]")
     print("Available resources on this device:")
     if len(self.options_resource) > 0: last = sorted(self.options_resource)[-1]
-    for res in sorted(self.options_resource): print(('└─ ' if res == last else '├─ ') + res)
+    for res in sorted(self.options_resource): print((('└─ ' if res == last else '├─ ') + res))
 
   options_resource = []
   def complete_resource(self, text, line, begidx, endidx):
@@ -1010,7 +1011,7 @@ class postscript(printer):
   def do_config(self, arg):
     arg = re.split("\s+", arg, 1)
     (arg, val) = tuple(arg) if len(arg) > 1 else (arg[0], None)
-    if arg in self.options_config.keys():
+    if arg in list(self.options_config.keys()):
       key = self.options_config[arg]
       if arg == 'copies' and not val: return self.help_config()
       output().psonly()

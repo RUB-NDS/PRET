@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # python standard library
@@ -60,7 +61,7 @@ class pjl(printer):
   def do_status(self, arg):
     "Enable status messages."
     self.status = not self.status
-    print("Status messages enabled" if self.status else "Status messages disabled")
+    print(("Status messages enabled" if self.status else "Status messages disabled"))
 
   # parse PJL status message
   def showstatus(self, str_stat):
@@ -72,7 +73,7 @@ class pjl(printer):
     for (num, mstr) in re.findall('DISPLAY(\d+)?\s*=\s*"(.*)"', str_stat):
       messages[num] = mstr
     # show codes and messages
-    for num, code in codes.items():
+    for num, code in list(codes.items()):
       message = messages[num] if num in messages else "UNKNOWN STATUS"
       # workaround for hp printers with wrong range
       if code.startswith("32"):
@@ -202,7 +203,7 @@ class pjl(printer):
   def do_mkdir(self, arg):
     "Create remote directory:  mkdir <path>"
     if not arg:
-      arg = raw_input("Directory: ")
+      arg = eval(input("Directory: "))
     path = self.rpath(arg)
     self.cmd('@PJL FSMKDIR NAME="' + path + '"', False)
 
@@ -243,7 +244,7 @@ class pjl(printer):
   # ------------------------[ mirror <local path> ]---------------------
   def do_mirror(self, arg):
     "Mirror remote file system to local directory:  mirror <remote path>"
-    print("Creating mirror of " + c.SEP + self.vpath(arg))
+    print(("Creating mirror of " + c.SEP + self.vpath(arg)))
     self.fswalk(arg, 'mirror')
 
   # perform recursive function on file system
@@ -358,7 +359,7 @@ class pjl(printer):
   def do_set(self, arg, fb=True):
     "Set printer environment variable:  set <VAR=VALUE>"
     if not arg:
-      arg = raw_input("Set variable (VAR=VALUE): ")
+      arg = eval(input("Set variable (VAR=VALUE): "))
     self.cmd('@PJL SET SERVICEMODE=HPBOISEID' + c.EOL
            + '@PJL DEFAULT ' + arg            + c.EOL
            + '@PJL SET '     + arg            + c.EOL
@@ -392,7 +393,7 @@ class pjl(printer):
   def do_display(self, arg):
     "Set printer's display message:  display <message>"
     if not arg:
-      arg = raw_input("Message: ")
+      arg = eval(input("Message: "))
     arg = arg.strip('"') # remove quotes
     self.chitchat("Setting printer's display message to \"" + arg + "\"")
     self.cmd('@PJL RDYMSG DISPLAY="' + arg + '"', False)
@@ -401,7 +402,7 @@ class pjl(printer):
   def do_offline(self, arg):
     "Take printer offline and display message:  offline <message>"
     if not arg:
-      arg = raw_input("Offline display message: ")
+      arg = eval(input("Offline display message: "))
     arg = arg.strip('"') # remove quotes
     output().warning("Warning: Taking the printer offline will prevent yourself and others")
     output().warning("from printing or re-connecting to the device. Press CTRL+C to abort.")
@@ -522,12 +523,12 @@ class pjl(printer):
           elif not '42' in copies:
             self.chitchat("\rI'm afraid. I'm afraid, Dave. Dave, my mind is going...")
             dead = conv().elapsed(conv().now() - date)
-            print("NVRAM died after " + str(count*steps) + " cycles, " + dead)
+            print(("NVRAM died after " + str(count*steps) + " cycles, " + dead))
             return
         # force writing to nvram using by setting a variable many times
         self.chitchat("\rNVRAM write cycles:  " + str(count*steps), '')
         self.cmd(c.EOL.join(chunk) + c.EOL + '@PJL INFO ID')
-    print # echo newline if we get this far
+    print() # echo newline if we get this far
 
   # ------------------------[ hold ]------------------------------------
   def do_hold(self, arg):
@@ -563,10 +564,10 @@ class pjl(printer):
           if not str_recv: return
           # collect valid memory addresses
           blocks = re.findall('ADDRESS\s*=\s*(\d+)', str_recv)
-          for addr in blocks: memspace += range(conv().int(addr), conv().int(addr) + bs)
+          for addr in blocks: memspace += list(range(conv().int(addr), conv().int(addr) + bs))
           self.chitchat(str(len(blocks)) + " blocks found. ", '')
       else: # use fixed memspace (quick & dirty but might cover interesting stuff)
-        memspace = range(0, 8192) + range(32768, 33792) + range(53248, 59648)
+        memspace = list(range(0, 8192)) + list(range(32768, 33792)) + list(range(53248, 59648))
       #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       # ******* dumping: read nvram and write copy to local file ******
       commands = ['@PJL RNVRAM ADDRESS=' + str(n) for n in memspace]
@@ -579,7 +580,7 @@ class pjl(printer):
         data = ''.join([conv().chr(n) for n in re.findall('DATA\s*=\s*(\d+)', str_recv)])
         file().append(lpath, data) # write copy of nvram to disk
         output().dump(data) # print asciified output to screen
-      print
+      print()
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # read nvram (single byte)
     elif arg.startswith('read'):
@@ -617,7 +618,7 @@ class pjl(printer):
   def do_lock(self, arg):
     "Lock control panel settings and disk write access."
     if not arg:
-      arg = raw_input("Enter PIN (1..65535): ")
+      arg = eval(input("Enter PIN (1..65535): "))
     self.cmd('@PJL DEFAULT PASSWORD=' + arg + c.EOL
            + '@PJL DEFAULT CPLOCK=ON'       + c.EOL
            + '@PJL DEFAULT DISKLOCK=ON', False)
@@ -644,7 +645,7 @@ class pjl(printer):
     # user-supplied pin vs. 'exhaustive' key search
     if not arg:
       print("No PIN given, cracking.")
-      keyspace = [""] + range(1, 65536) # protection can be bypassed with
+      keyspace = [""] + list(range(1, 65536)) # protection can be bypassed with
     else:                               # empty password one some devices
       try:
         keyspace = [int(arg)]
