@@ -61,10 +61,10 @@ class capabilities():
       sys.stdout.write("Checking for IPP support:         ")
       body = ("\x01\x01\x00\x0b\x00\x01\xab\x10\x01G\x00\x12attributes-charset\x00\x05utf-8H"
             + "\x00\x1battributes-natural-language\x00\x02enE\x00\x0bprinter-uri\x00\x14ipp:"
-            + "//localhost/ipp/D\x00\x14requested-attributes\x00\x13printer-description\x03")
+            + "//localhost/ipp/D\x00\x14requested-attributes\x00\x13printer-description\x03").encode()
       request  = urllib.request.Request("http://" + host + ":631/",
                  data=body, headers={'Content-type': 'application/ipp'})
-      response = urllib.request.urlopen(request, timeout=self.timeout).read()
+      response = urllib.request.urlopen(request, timeout=self.timeout).read().decode()
       # get name of device
       model = item(re.findall("MDL:(.+?);", response)) # e.g. MDL:hp LaserJet 4250
       # get language support
@@ -81,7 +81,7 @@ class capabilities():
     try:
       # poor man's way get http title
       sys.stdout.write("Checking for HTTP support:        ")
-      html = urllib.request.urlopen("http://" + host, timeout=self.timeout).read()
+      html = urllib.request.urlopen("http://" + host, timeout=self.timeout).read().decode()
       # cause we are to parsimonious to import BeautifulSoup ;)
       title = re.findall("<title.*?>\n?(.+?)\n?</title>", html, re.I|re.M|re.S)
       # get name of device
@@ -116,7 +116,7 @@ class capabilities():
       # get language support
       langs = ','.join(pdls)
       self.support = [_f for _f in [re.findall(re.escape(pdl), langs, re.I) for pdl in lang] if _f]
-      self.set_support(model)
+      #self.set_support(model)
       output().green("found")
     except NameError:
       output().errmsg("not found", "pysnmp module not installed")

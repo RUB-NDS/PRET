@@ -387,14 +387,14 @@ class conn(object):
     # send data to device
     if self._file: return os.write(self._file, data)
     # send data to socket
-    elif self._sock: return self._sock.sendall(data)
+    elif self._sock: return self._sock.sendall(data.encode())
 
   # receive data
   def recv(self, bytes):
     # receive data from device
     if self._file: data = os.read(self._file, bytes)
     # receive data from socket
-    else: data = self._sock.recv(bytes)
+    else: data = self._sock.recv(bytes).decode()
     # output recv data when in debug mode
     if self.debug: output().recv(self.beautify(data), self.debug)
     return data
