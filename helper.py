@@ -394,7 +394,7 @@ class conn(object):
     # receive data from device
     if self._file: data = os.read(self._file, bytes)
     # receive data from socket
-    else: data = self._sock.recv(bytes)
+    else: data = self._sock.recv(bytes).decode()
     # output recv data when in debug mode
     if self.debug: output().recv(self.beautify(data), self.debug)
     return data
@@ -417,7 +417,7 @@ class conn(object):
     s = re.compile("^\x04?\x0d?\x0a?" + delimiter, re.DOTALL)
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     while not r.search(data):
-      data += self.recv(4096).decode() # receive actual data
+      data += self.recv(4096) # receive actual data
       if self.past(limit, wd): wd_old, bytes = wd, len(data)
       wd += sleep       # workaround for endless loop w/o socket timeout
       time.sleep(sleep) # happens on some devices - python socket error?
