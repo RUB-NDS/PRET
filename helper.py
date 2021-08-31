@@ -392,7 +392,7 @@ class conn(object):
   # receive data
   def recv(self, bytes):
     # receive data from device
-    if self._file: data = os.read(self._file, bytes)
+    if self._file: data = os.read(self._file, bytes).decode()
     # receive data from socket
     else: data = self._sock.recv(bytes).decode()
     # output recv data when in debug mode

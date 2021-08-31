@@ -408,7 +408,7 @@ class printer(cmd.Cmd, object):
       if lsize != rsize and len(conv().nstrip(data)) == rsize:
         lsize, data = rsize, conv().nstrip(data)
       # write to local file
-      file().write(lpath, data)
+      file().write(lpath, data.encode())
       if lsize == rsize:
         print((str(lsize) + " bytes received."))
       else:
