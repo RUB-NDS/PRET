@@ -27,15 +27,11 @@
 #   to files in the spool dir by BSD 4.4 lpd); worth a shot
 
 # python standard library
-import sys, socket, argparse, time
+import sys, socket, argparse
 
 # ----------------------------------------------------------------------
 
-#TODO PRO bf printer name
-#TODO PRO port python3
 
-
-#
 def usage():
   parser = argparse.ArgumentParser(
     description="Line Printer Daemon Protocol (RFC 1179) Test.",
@@ -46,7 +42,7 @@ def usage():
   lpdtest printer rm /some/file/on/printer
   lpdtest printer in '() {:;}; ping -c1 1.2.3.4'
   lpdtest printer mail lpdtest@mailhost.local
-  lpdtest printer brute --port 1234 ''',
+  lpdtest printer brute ./printerLdpList.txt --port 1234 ''',
   formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument("hostname", help="printer ip address or hostname")
   parser.add_argument("--port", type=int,    help="printer port",default=515)
@@ -75,30 +71,21 @@ def check_acknowledgement():
 # ----------------------------------------------------------------------
 
 queue = "lp" # see https://www.brooksnet.com/content/faq-lpd-queue-names-network-print-servers
-# queue = "text"
 
 def getFilequeueList(aFilename):
   filequeueList=[]
   try:
     f = open(aFilename, 'r')
-    # filequeueList = f.readlines()
-        # Get next line from file
     while True:
       line = f.readline()
-  
-      # if line is empty
-      # end of file is reached
       if not line:
           break
-      # print("Line: {}", line.strip())
       filequeueList.append(line.strip("\n"))
- 
+    f.close()
     
-
   except Exception as e:
     print(("Error Open file: ",aFilename))
-  finally:
-    f.close()
+   
   return filequeueList
 
 
@@ -150,15 +137,6 @@ elif args.mode == 'brute':
   bruteQueueNameFile = args.argument
   print("[brute] Trying to brute force queue file " + args.argument)
 
-  # bruteforcequeue(): 
-  # try:
-  #   que = args.argument.split('@', 1)[0]
-  #   hostname = args.argument.split('@', 1)[1]
-  # except Exception as e:
-  #   print "Bad argument" + str(e)
-  #   sys.exit()
-  # print "[mail] Trying to send job information to " + args.argument  
-
 # --------[ RFC 1179 | 6.2 02 - Receive control file ]------------------
 
 if hostname:             ctrl += 'H'+ hostname+"\n" # [ RFC 1179 | 7.2 H  - Host name | max. 31 bytes ]
@@ -189,23 +167,18 @@ if args.mode == 'brute':
     #time.sleep(2)
     
     if s.recv(4096) != b"\000":
-      # print "Negative acknowledgement"
       s.send(b"\001\n") # [ RFC 1179 | 6.1 01 - Abort job ]
       s.close()
-      #reopen for next attempt
-      s = socket.socket()
+      s = socket.socket()       #reopen for next attempt
       s.connect((args.hostname, args.port))
       continue
 
     else :
       print("Printer found:",queueName)
       break
-   
+  
 
   s.close()
-  #sys.exit()
-  # check_acknowledgement()
-  # print queueList
   sys.exit(1)
   
 else:
@@ -224,6 +197,6 @@ check_acknowledgement()
 s.send(bytes(data + "\000",'utf-8')) # send data file || file complete indicator
 check_acknowledgement()
 
-# ----------------------------------------------------------------------
+# ---------------------------------git -------------------------------------
 
 s.close()
