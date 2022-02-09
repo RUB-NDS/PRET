@@ -2,7 +2,12 @@
 # -*- coding: utf-8 -*-
 
 # python standard library
-import re, os, sys, urllib.request, urllib.error, urllib.parse
+import re, os, sys #, urllib.error, urllib.parse
+
+try:
+  import urllib.request as urllib_request
+except ImportError:
+  import urllib as urllib_request
 
 # local pret classes
 from helper import output, item
@@ -62,9 +67,9 @@ class capabilities():
       body = ("\x01\x01\x00\x0b\x00\x01\xab\x10\x01G\x00\x12attributes-charset\x00\x05utf-8H"
             + "\x00\x1battributes-natural-language\x00\x02enE\x00\x0bprinter-uri\x00\x14ipp:"
             + "//localhost/ipp/D\x00\x14requested-attributes\x00\x13printer-description\x03").encode()
-      request  = urllib.request.Request("http://" + host + ":631/",
+      request  = urllib_request.Request("http://" + host + ":631/",
                  data=body, headers={'Content-type': 'application/ipp'})
-      response = urllib.request.urlopen(request, timeout=self.timeout).read().decode()
+      response = urllib_request.urlopen(request, timeout=self.timeout).read().decode()
       # get name of device
       model = item(re.findall("MDL:(.+?);", response)) # e.g. MDL:hp LaserJet 4250
       # get language support
@@ -81,7 +86,7 @@ class capabilities():
     try:
       # poor man's way get http title
       sys.stdout.write("Checking for HTTP support:        ")
-      html = urllib.request.urlopen("http://" + host, timeout=self.timeout).read().decode()
+      html = urllib_request.urlopen("http://" + host, timeout=self.timeout).read().decode()
       # cause we are to parsimonious to import BeautifulSoup ;)
       title = re.findall("<title.*?>\n?(.+?)\n?</title>", html, re.I|re.M|re.S)
       # get name of device
