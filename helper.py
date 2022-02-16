@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# python standard library
+from __future__ import print_function
 
+# python standard library
 from socket import socket
 import sys, os, re, stat, math, time, datetime
 import importlib
