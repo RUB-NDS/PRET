@@ -362,13 +362,19 @@ class conn(object):
     self._sock = socket()
 
   # open connection
-  def open(self, target):
+  def open(self, target, port=9100):
     # target is a character device
     if os.path.exists(target) \
       and stat.S_ISCHR(os.stat(target).st_mode):
         self._file = os.open(target, os.O_RDWR)
     # treat target as ipv4 socket
-    else: self._sock.connect((target, 9100))
+    else:
+      m = re.search('^(.+?):([0-9]+)$', target)
+      if m:
+        [target, port] = m.groups()
+        port = int(port)
+
+      self._sock.connect((target, port))
 
   # close connection
   def close(self, *arg):
