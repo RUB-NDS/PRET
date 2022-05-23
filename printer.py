@@ -140,7 +140,7 @@ class printer(cmd.Cmd, object):
     "Run commands from file:  load cmd.txt"
     if not arg:
       arg = eval(input("File: "))
-    data = file().read(arg) or ""
+    data = file().read(arg).decode() or ""
     for cmd in data.splitlines():
       # simulate command prompt
       print((self.prompt + cmd))
@@ -743,7 +743,7 @@ class printer(cmd.Cmd, object):
     '''
     if not arg: arg = eval(input('File or "text": '))
     if arg.startswith('"'): data = arg.strip('"')     # raw text string
-    elif arg.endswith('.ps'): data = file().read(arg) # postscript file
+    elif arg.endswith('.ps'): data = file().read(arg).decode() # postscript file
     else: data = self.convert(arg, 'pcl')             # anything else…
     if data: self.send(c.UEL + data + c.UEL) # send pcl datastream to printer
 
