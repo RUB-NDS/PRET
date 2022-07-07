@@ -104,10 +104,9 @@ class printer(cmd.Cmd, object):
   # --------------------------------------------------------------------
   # catch-all wrapper to guarantee continuation on unhandled exceptions
   def onecmd(self, line):
-    try:
-      cmd.Cmd.onecmd(self, line)
-    except Exception as e:
-      output().errmsg("Program Error", e)
+    
+    cmd.Cmd.onecmd(self, line)
+    
 
   # ====================================================================
 
@@ -139,7 +138,7 @@ class printer(cmd.Cmd, object):
   def do_load(self, arg):
     "Run commands from file:  load cmd.txt"
     if not arg:
-      arg = eval(input("File: "))
+      arg = (input("File: "))
     data = file().read(arg).decode() or ""
     for cmd in data.splitlines():
       # simulate command prompt
@@ -170,7 +169,7 @@ class printer(cmd.Cmd, object):
   def do_open(self, arg, mode=""):
     "Connect to remote device:  open <target>"
     if not arg:
-      arg = eval(input("Target: "))
+      arg = (input("Target: "))
     # open connection
     try:
       newtarget = (arg != self.target)
@@ -265,7 +264,7 @@ class printer(cmd.Cmd, object):
   def do_chvol(self, arg):
     "Change remote volume:  chvol <volume>"
     if not arg:
-      arg = eval(input("Volume: "))
+      arg = (input("Volume: "))
     if arg and self.vol_exists(arg):
       if self.mode == 'ps':  self.set_vol('%' + arg.strip('%') + '%')
       if self.mode == 'pjl': self.set_vol(arg[0] + ':' + c.SEP)
@@ -396,7 +395,7 @@ class printer(cmd.Cmd, object):
   def do_get(self, arg, lpath="", r=True):
     "Receive file:  get <file>"
     if not arg:
-      arg = eval(input("Remote file: "))
+      arg = (input("Remote file: "))
     if not lpath:
       lpath = self.basename(arg)
     path = self.rpath(arg) if r else arg
@@ -422,7 +421,7 @@ class printer(cmd.Cmd, object):
   def do_put(self, arg, rpath=""):
     "Send file:  put <local file>"
     if not arg:
-      arg = eval(input("Local file: "))
+      arg = (input("Local file: "))
     if not rpath:
       rpath = os.path.basename(arg)
     rpath = self.rpath(rpath)
@@ -456,14 +455,14 @@ class printer(cmd.Cmd, object):
   def do_touch(self, arg):
     "Update file timestamps:  touch <file>"
     if not arg:
-      arg = eval(input("Remote file: "))
+      arg = (input("Remote file: "))
     rpath = self.rpath(arg)
     self.append(rpath, '')
 
   # ------------------------[ delete <file> ]---------------------------
   def do_delete(self, arg):
     if not arg:
-      arg = eval(input("File: "))
+      arg = (input("File: "))
     self.delete(arg)
 
   # define alias but do not show alias in help
@@ -476,7 +475,7 @@ class printer(cmd.Cmd, object):
   def do_cat(self, arg):
     "Output remote file to stdout:  cat <file>"
     if not arg:
-      arg = eval(input("Remote file: "))
+      arg = (input("Remote file: "))
     path = self.rpath(arg)
     str_recv = self.get(path)
     if str_recv != c.NONEXISTENT:
@@ -729,7 +728,7 @@ class printer(cmd.Cmd, object):
   def do_site(self, arg):
     "Execute custom command on printer:  site <command>"
     if not arg:
-      arg = eval(input("Command: "))
+      arg = (input("Command: "))
     str_recv = self.cmd(arg)
     output().info(str_recv)
 
@@ -741,7 +740,7 @@ class printer(cmd.Cmd, object):
     │ Poor man's driverless printing (PCL based, experimental) │
     └──────────────────────────────────────────────────────────┘
     '''
-    if not arg: arg = eval(input('File or "text": '))
+    if not arg: arg = (input('File or "text": '))
     if arg.startswith('"'): data = arg.strip('"')     # raw text string
     elif arg.endswith('.ps'): data = file().read(arg).decode() # postscript file
     else: data = self.convert(arg, 'pcl')             # anything else…

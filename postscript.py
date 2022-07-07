@@ -194,7 +194,7 @@ class postscript(printer):
   def do_mkdir(self, arg):
     "Create remote directory:  mkdir <path>"
     if not arg:
-      arg = eval(input("Directory: "))
+      arg = (input("Directory: "))
     # writing to dir/file should automatically create dir/
     # .dirfile is not deleted as empty dirs are not listed
     self.put(self.rpath(arg) + c.SEP + '.dirfile', '')
@@ -369,7 +369,7 @@ class postscript(printer):
   def do_lock(self, arg):
     "Set startjob and system parameters password."
     if not arg:
-      arg = eval(input("Enter password: "))
+      arg = (input("Enter password: "))
     self.cmd('<< /Password () '
              '/SystemParamsPassword (' + arg + ') ' # harmless settings
              '/StartJobPassword (' + arg + ') '     # alter initial vm!
@@ -504,7 +504,7 @@ class postscript(printer):
   # ------------------------[ overlay <file> ]--------------------------
   def do_overlay(self, arg):
     "Put overlay image on all hard copies:  overlay <file>"
-    if not arg: arg = eval(input('File: '))
+    if not arg: arg = (input('File: '))
     if arg.endswith('ps'): data = file().read(arg) # already ps/eps file
     else:
       self.chitchat("For best results use a file from the overlays/ directory")

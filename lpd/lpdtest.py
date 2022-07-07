@@ -108,34 +108,34 @@ bruteQueueNameFile = "printer.txt"  # default name of file to bruteforce Queue N
 if args.mode == 'get':
   getname = args.argument
   data += " If you can read this, the test failed."
-  print("[get] Trying to print file " + args.argument)
+  print(("[get] Trying to print file " + args.argument))
 
 elif args.mode == 'put':
   ctrlfile = args.argument
   datafile = args.argument
-  print("[put] Trying to write to file " + args.argument)
+  print(("[put] Trying to write to file " + args.argument))
 
 elif args.mode == 'rm':
   delname = args.argument
-  print("[rm] Trying to delete file " + args.argument)
+  print(("[rm] Trying to delete file " + args.argument))
 
 elif args.mode == 'in':
   hostname = username = ctrlfile = datafile  = delname  = jobname \
            = srcfile  = jobtitle = classname = mailname = args.argument
-  print("[in] Trying to send user input '" + args.argument + "'")
+  print(("[in] Trying to send user input '" + args.argument + "'"))
 
 elif args.mode == 'mail':
   try:
     mailname = args.argument.split('@', 1)[0]
     hostname = args.argument.split('@', 1)[1]
   except Exception as e:
-    print("Bad argument" + str(e))
+    print(("Bad argument" + str(e)))
     sys.exit()
-  print("[mail] Trying to send job information to " + args.argument)
+  print(("[mail] Trying to send job information to " + args.argument))
 
 elif args.mode == 'brute':
   bruteQueueNameFile = args.argument
-  print("[brute] Trying to brute force queue file " + args.argument)
+  print(("[brute] Trying to brute force queue file " + args.argument))
 
 # --------[ RFC 1179 | 6.2 02 - Receive control file ]------------------
 
@@ -174,7 +174,7 @@ if args.mode == 'brute':
       continue
 
     else :
-      print("Printer found:",queueName)
+      print(("Printer found:",queueName))
       break
   
 

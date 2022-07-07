@@ -203,7 +203,7 @@ class pjl(printer):
   def do_mkdir(self, arg):
     "Create remote directory:  mkdir <path>"
     if not arg:
-      arg = eval(input("Directory: "))
+      arg = (input("Directory: "))
     path = self.rpath(arg)
     self.cmd('@PJL FSMKDIR NAME="' + path + '"', False)
 
@@ -359,7 +359,7 @@ class pjl(printer):
   def do_set(self, arg, fb=True):
     "Set printer environment variable:  set <VAR=VALUE>"
     if not arg:
-      arg = eval(input("Set variable (VAR=VALUE): "))
+      arg = (input("Set variable (VAR=VALUE): "))
     self.cmd('@PJL SET SERVICEMODE=HPBOISEID' + c.EOL
            + '@PJL DEFAULT ' + arg            + c.EOL
            + '@PJL SET '     + arg            + c.EOL
@@ -393,7 +393,7 @@ class pjl(printer):
   def do_display(self, arg):
     "Set printer's display message:  display <message>"
     if not arg:
-      arg = eval(input("Message: "))
+      arg = input("Message: ")
     arg = arg.strip('"') # remove quotes
     self.chitchat("Setting printer's display message to \"" + arg + "\"")
     self.cmd('@PJL RDYMSG DISPLAY="' + arg + '"', False)
@@ -402,7 +402,7 @@ class pjl(printer):
   def do_offline(self, arg):
     "Take printer offline and display message:  offline <message>"
     if not arg:
-      arg = eval(input("Offline display message: "))
+      arg = (input("Offline display message: "))
     arg = arg.strip('"') # remove quotes
     output().warning("Warning: Taking the printer offline will prevent yourself and others")
     output().warning("from printing or re-connecting to the device. Press CTRL+C to abort.")
@@ -618,7 +618,7 @@ class pjl(printer):
   def do_lock(self, arg):
     "Lock control panel settings and disk write access."
     if not arg:
-      arg = eval(input("Enter PIN (1..65535): "))
+      arg = (input("Enter PIN (1..65535): "))
     self.cmd('@PJL DEFAULT PASSWORD=' + arg + c.EOL
            + '@PJL DEFAULT CPLOCK=ON'       + c.EOL
            + '@PJL DEFAULT DISKLOCK=ON', False)

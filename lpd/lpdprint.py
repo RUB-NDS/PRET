@@ -27,7 +27,7 @@ try:
     data = f.read()
   f.close()
 except IOError as e:
-  print "Cannot read from file: " + str(e)
+  print(("Cannot read from file: " + str(e)))
   sys.exit()
 
 # ----------------------------------------------------------------------
@@ -35,7 +35,7 @@ except IOError as e:
 # get lpd acknowledgement
 def check_acknowledgement():
   if s.recv(4096) != "\000":
-	print "Negative acknowledgement"
+	print("Negative acknowledgement")
 	s.send("\001\n") # [ RFC 1179 | 6.1 01 - Abort job ]
 	s.close()
 	sys.exit()
