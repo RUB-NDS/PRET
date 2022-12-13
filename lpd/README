@@ -7,7 +7,7 @@
 BSD 4.4 lpd had some security problems documented here:
 http://insecure.org/sploits/lpd.protocol.problems.html
 
-Some implemenations of the lpd protocol running on network
+Some implementations of the lpd protocol running on network
 printers might still be vulnerable. The `lpdprint' program
 simply sends a file to a host with a line printer daemon on
 port 515. The `lpdtest' program however tries to abuse some
@@ -40,7 +40,7 @@ $ lpdtest printer get ../../../etc/passwd
 
 Try to upload a file to printer's file system. The file
 name operators of the '2' and '3' commands (receive data
-file or control file) is used for this. Values SOULD be:
+file or control file) is used for this. Values SHOULD be:
 
 data:  cfA || three digit job number || client hostname
 ctrl:  dfA || three digit job number || client hostname
@@ -100,6 +100,6 @@ Try to send job information to a specified email address.
 The 'M' command (mail when printed) in combination with
 the 'H' command (host name) is used for this. The feature
 be abused for spamming and should never be enabled in any
-current lpd implemenation. Testing is as simple as this:
+current lpd implementation. Testing is as simple as this:
 
 $ lpdtest printer mail lpdtest@dontsendmesapm.de

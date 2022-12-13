@@ -412,7 +412,7 @@ class pjl(printer):
   # ------------------------[ restart ]---------------------------------
   def do_restart(self, arg):
     "Restart printer."
-    output().raw("Trying to restart the device via PML (Printer Managment Language)")
+    output().raw("Trying to restart the device via PML (Printer Management Language)")
     self.cmd('@PJL DMCMD ASCIIHEX="040006020501010301040104"', False)
     if not self.conn._file: # in case we're connected over inet socket
       output().chitchat("This command works only for HP printers. For other vendors, try:")

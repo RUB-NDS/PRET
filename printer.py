@@ -79,7 +79,7 @@ class printer(cmd.Cmd, object):
     if header is not None:
       cmd.Cmd.print_topics(self, header, cmds, cmdlen, maxcol)
 
-  # supress some chit-chat in quiet mode
+  # suppress some chit-chat in quiet mode
   def chitchat(self, *args):
     if not self.quiet: output().chitchat(*args)
 
@@ -224,7 +224,7 @@ class printer(cmd.Cmd, object):
     except Exception as e:
       output().errmsg("Cannot set timeout", e)
 
-  # send mode-specific command whith modified timeout
+  # send mode-specific command with modified timeout
   def timeoutcmd(self, str_send, timeout, *stuff):
     timeout_old = self.timeout
     self.do_timeout(timeout, True)
@@ -328,17 +328,17 @@ class printer(cmd.Cmd, object):
     cwd = self.cwd if self.conn else ""
     self.prompt = target + c.SEP + cwd + "> "
 
-  # get seperator
+  # get separator
   def get_sep(self, path):
-    # don't add seperator between ps volume and filename
+    # don't add separator between ps volume and filename
     if self.mode == 'ps' and re.search("^%.*%$", path): return ''
-    # add seperator if we have to deal with a directory
+    # add separator if we have to deal with a directory
     return c.SEP if (path or self.cwd or self.traversal) else ''
 
   # --------------------------------------------------------------------
   # get path without traversal and cwd information
   def tpath(self, path):
-    # remove leading seperators
+    # remove leading separators
     path = path.lstrip(c.SEP)
     return self.vol + self.normpath(path)
 
@@ -346,7 +346,7 @@ class printer(cmd.Cmd, object):
   def cpath(self, path):
     # generate virtual path on remote device
     path = c.SEP.join((self.cwd, path))
-    # remove leading seperators
+    # remove leading separators
     path = path.lstrip(c.SEP)
     return self.normpath(path)
 
@@ -354,7 +354,7 @@ class printer(cmd.Cmd, object):
   def vpath(self, path):
     # generate virtual path on remote device
     path = c.SEP.join((self.traversal, self.cwd, path))
-    # remove leading seperators
+    # remove leading separators
     path = path.lstrip(c.SEP)
     return self.normpath(path)
 
@@ -376,7 +376,7 @@ class printer(cmd.Cmd, object):
     │        problems when using posixpath.normpath         │
     ├───────────────────────────────────────────────────────┤
     │ [✗] breaks obscure traversal strategies like '.../..' │
-    │ [✓] removes tailing seperators, we can deal with this │
+    │ [✓] removes tailing separators, we can deal with this │
     │ [✓] sets '.' for 'dir/..', refused by ps interpreters │
     └───────────────────────────────────────────────────────┘
     '''
@@ -525,7 +525,7 @@ class printer(cmd.Cmd, object):
     │ commands), she might accidentally overwrite her files...  │
     │                                                           │
     │ our strategy is to first replace trivial path traversal   │
-    │ strings (while still beeing able to download the files)   │
+    │ strings (while still being able to download the files)   │
     │ and simply give up on more sophisticated ones for now.    │
     └───────────────────────────────────────────────────────────┘
     '''
@@ -591,12 +591,12 @@ class printer(cmd.Cmd, object):
       self.help_fuzz()
 
   def fuzz_path(self):
-    output().raw("Checking base pathes first.")
+    output().raw("Checking base paths first.")
     # get a cup of coffee, fuzzing will take some time
     output().fuzzed('PATH', '', ('', 'EXISTS',  'DIRLIST'))
     output().hline()
-    found = {} # pathes found
-    # try base pathes first
+    found = {} # paths found
+    # try base paths first
     for path in self.vol_exists() + fuzzer().path:
       self.verify_path(path, found)
     output().raw("Checking filesystem hierarchy standard.")
