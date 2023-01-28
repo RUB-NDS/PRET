@@ -525,7 +525,7 @@ class printer(cmd.Cmd, object):
     │ commands), she might accidentally overwrite her files...  │
     │                                                           │
     │ our strategy is to first replace trivial path traversal   │
-    │ strings (while still being able to download the files)   │
+    │ strings (while still being able to download the files)    │
     │ and simply give up on more sophisticated ones for now.    │
     └───────────────────────────────────────────────────────────┘
     '''
