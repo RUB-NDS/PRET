@@ -45,7 +45,7 @@ class pcl(printer):
 
   '''
   ┌───────────────────────────────────────────────────────────────┐
-  │     `pclfs' specs // mostly implemented for the hack value     │
+  │     `pclfs' specs // mostly implemented for the hack value    │
   ├────────────┬──────────────┬───────────────────────────────────┤
   │ macro ids  │        31337 │ superblock (serialized metadata)  │
   │            │ 10000..19999 │ file content (binary or ascii)    │
