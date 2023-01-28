@@ -61,7 +61,7 @@ address          device                       uptime    status
 192.168.1.28     Brother MFC-7860DW           16:31:17   Sleep mode            
 ```
 
-The printer language to be abused must be one of `ps`, `pjl` or `pcl`. Not all languages are supported by every printer, so you may wan't to switch languages if you don't receive any feedback. Each printer language is mapped to a different set of PRET commands and has different capabilities to exploit.
+The printer language to be abused must be one of `ps`, `pjl` or `pcl`. Not all languages are supported by every printer, so you may want to switch languages if you don't receive any feedback. Each printer language is mapped to a different set of PRET commands and has different capabilities to exploit.
 
 ###### Optional Arguments:
 
@@ -71,7 +71,7 @@ The printer language to be abused must be one of `ps`, `pjl` or `pcl`. Not all l
 
 `--debug` shows the datastream actually sent to the device and the feedback received. Note that header data and other overhead is filtered. The see the whole traffic, use wireshark. Debugging can also be switched on/off within a PRET session using the `debug` command 
 
-`--load filename` reads and executes PRET commands from a text file. This is usefull for automation. Command files can also be invoked later within a PRET session via the `load` command.
+`--load filename` reads and executes PRET commands from a text file. This is useful for automation. Command files can also be invoked later within a PRET session via the `load` command.
 
 `--log filename` writes a copy of the raw datastream sent to the printer into a file. This can be useful to build a malicious print job file which can be deployed on another printer not directly reachable, for example by printing it from USB drive.
 
@@ -279,12 +279,12 @@ PCL is a very limited page description language without access to the file syste
 ### File Listing
 
 - `pret.py` - Executable main program
-- `capabilities.py` - Routines to check for printer langauge support
+- `capabilities.py` - Routines to check for printer language support
 - `discovery.py` - Routines to list printers using SNMP broadcast
 - `printer.py` - Generic code to describe a printing device
-- `postscript.py` - PS spezific code (inherits from class printer)
-- `pjl.py` - PJL spezific code (inherits from class printer)
-- `pcl.py` - PCL spezific code (inherits from class printer)
+- `postscript.py` - PS specific code (inherits from class printer)
+- `pjl.py` - PJL specific code (inherits from class printer)
+- `pcl.py` - PCL specific code (inherits from class printer)
 - `helper.py` - Help functions for output, logging, sockets, etc.
 - `codebook.py` - Static table of PJL status/error codes
 - `fuzzer.py` - Constants for file system fuzzing

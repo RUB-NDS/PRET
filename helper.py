@@ -226,10 +226,10 @@ class output():
       value = val['value']
       perms = val['perms']
       recursion = False
-      # current enty is a dictionary
+      # current entry is a dictionary
       if isinstance(value, dict):
         value, recursion = '', True
-      # current enty is a ps array
+      # current entry is a ps array
       if isinstance(value, list):
         try: # array contains only atomic values
           value = ' '.join(x['value'] for x in value)
@@ -287,7 +287,7 @@ class conv():
     date = str(datetime.timedelta(seconds=int(date)/div))
     return date.split(",")[0] if short else date
 
-  # return date dependend on current year
+  # return date dependent on current year
   def lsdate(self, date):
     year1 = datetime.datetime.now().year
     year2 = datetime.datetime.fromtimestamp(date).year
@@ -299,7 +299,7 @@ class conv():
   def timediff(self, seconds):
     return self.lsdate(self.now() + self.int(seconds) / 1000)
 
-  # convert size to human readble value
+  # convert size to human readable value
   def filesize(self, num):
     num = self.int(num)
     for unit in ['B','K','M']:
@@ -311,7 +311,7 @@ class conv():
   def nstrip(self, data):
     return re.sub(r'\r\n', '\n', data)
 
-  # convert string to hexdecimal
+  # convert string to hexadecimal
   def hex(self, data, sep=''):
     return sep.join("{:02x}".format(ord(c)) for c in data)
 
@@ -512,7 +512,7 @@ class const(): # define constants
   ESC         = '\x1b' # used to start escape sequences
   UEL         = ESC + '%-12345X' # universal exit language
   EOF         = EOL + '\x0c\x04' # potential end of file chars
-  DELIMITER   = "DELIMITER" # delimiter marking end of repsonse
+  DELIMITER   = "DELIMITER" # delimiter marking end of response
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   PS_CATCH    = '%%\[ (.*)\]%%'
   PS_ERROR    = '%%\[ Error: (.*)\]%%'
@@ -532,4 +532,4 @@ class const(): # define constants
   NONEXISTENT = -2 # file size to be returned if a file does not exist
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   PS_VOL      = '' # no default volume in ps (read: any, write: first)
-  PJL_VOL     = '0:' + SEP # default pjl volume name || path seperator
+  PJL_VOL     = '0:' + SEP # default pjl volume name || path separator
