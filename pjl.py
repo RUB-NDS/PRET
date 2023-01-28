@@ -393,7 +393,7 @@ class pjl(printer):
   def do_display(self, arg):
     "Set printer's display message:  display <message>"
     if not arg:
-      arg = eval(input("Message: "))
+      arg = input("Message: ")
     arg = arg.strip('"') # remove quotes
     self.chitchat("Setting printer's display message to \"" + arg + "\"")
     self.cmd('@PJL RDYMSG DISPLAY="' + arg + '"', False)
