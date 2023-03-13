@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-import sys, json, curses
+import sys
+import json
+import curses
 import npyscreen
+
 
 class SearchDropdown(npyscreen.fmForm.Form):
     DEFAULT_LINES = 7
@@ -8,17 +11,20 @@ class SearchDropdown(npyscreen.fmForm.Form):
     SHOW_ATX = 33
     SHOW_ATY = 3
 
+
 class FilterDropdown(npyscreen.fmForm.Form):
     DEFAULT_LINES = 19
     DEFAULT_COLUMNS = 17
     SHOW_ATX = 33
     SHOW_ATY = 4
 
+
 class HelpMessage(npyscreen.fmForm.Form):
     DEFAULT_LINES = 9
     DEFAULT_COLUMNS = 45
     SHOW_ATX = 33
     SHOW_ATY = 4
+
 
 class FilterButton(npyscreen.MiniButtonPress):
 
@@ -31,22 +37,25 @@ class FilterButton(npyscreen.MiniButtonPress):
 
     h_exit_mouse = h_exit_down
 
+
 class SearchButton(npyscreen.MiniButtonPress):
 
     def whenPressed(self):
         self.parent.parentApp.mainform.search()
+
 
 class DictList(npyscreen.MLTree):
 
     def filter_value(self, index):
         return self._filter in ''.join(list(self._get_content(self.display_value(self.values[index])).values()))
 
-    def update(self, clear = False):
+    def update(self, clear=False):
         try:
             self.h_select(self)
             super(DictList, self).update()
             c = self.values[self.cursor_line].get_content()
-            self.parent.parentApp.mainform.update_value(c['value'], c['type'], c['perms'])
+            self.parent.parentApp.mainform.update_value(
+                c['value'], c['type'], c['perms'])
             self.parent.parentApp.mainform.update_perms(c['perms'])
         except:
             pass
@@ -54,9 +63,9 @@ class DictList(npyscreen.MLTree):
     def set_up_handlers(self):
         super(npyscreen.MLTree, self).set_up_handlers()
         self.handlers.update({ord('<'): self.h_collapse_tree,
-         ord('>'): self.h_expand_tree,
-         ord('{'): self.h_collapse_all,
-         ord('}'): self.h_expand_all})
+                              ord('>'): self.h_expand_tree,
+                              ord('{'): self.h_collapse_all,
+                              ord('}'): self.h_expand_all})
 
 
 class Dict(npyscreen.BoxTitle):
@@ -122,9 +131,9 @@ class Browser(npyscreen.NPSAppManaged):
                         value, recursion = '', True
 
                 c = {'key': key,
-                 'value': value,
-                 'type': type,
-                 'perms': perms}
+                     'value': value,
+                     'type': type,
+                     'perms': perms}
                 if not filter or type == filter or recursion:
                     c1 = treedata.new_child(content=c)
                     if recursion:
@@ -148,9 +157,9 @@ class Browser(npyscreen.NPSAppManaged):
                         value, recursion = '', True
 
                 c = {'key': key,
-                 'value': value,
-                 'type': type,
-                 'perms': perms}
+                     'value': value,
+                     'type': type,
+                     'perms': perms}
                 if not filter or type == filter or recursion:
                     c1 = treedata.new_child(content=c)
                     if recursion:
@@ -206,9 +215,11 @@ class MainForm(npyscreen.FormBaseNew):
         self.dict._contained_widget.h_set_filter
         self.dict.entry_widget.h_set_filter
         window = SearchDropdown(name='by key/value')
-        self.searchline = window.add(npyscreen.TitleText, name='Keyword:', value=self.search_text.value)
+        self.searchline = window.add(
+            npyscreen.TitleText, name='Keyword:', value=self.search_text.value)
         window.nextrely += 1
-        self.statusline = window.add(npyscreen.Textfield, color='LABEL', editable=False)
+        self.statusline = window.add(
+            npyscreen.Textfield, color='LABEL', editable=False)
         window.adjust_widgets = self.adjust_widgets1
         window.display()
         self.searchline.edit()
@@ -222,20 +233,20 @@ class MainForm(npyscreen.FormBaseNew):
     def filter(self, *args):
         window = FilterDropdown(name='by datatype')
         select = window.add_widget(npyscreen.MultiLine, return_exit=True, select_exit=True, values=['name',
-         'string',
-         'boolean',
-         'integer',
-         'real',
-         'null',
-         'operator',
-         'dict',
-         'array',
-         'packedarray',
-         'file',
-         'font',
-         'gstate',
-         'mark',
-         'save'])
+                                                                                                    'string',
+                                                                                                    'boolean',
+                                                                                                    'integer',
+                                                                                                    'real',
+                                                                                                    'null',
+                                                                                                    'operator',
+                                                                                                    'dict',
+                                                                                                    'array',
+                                                                                                    'packedarray',
+                                                                                                    'file',
+                                                                                                    'font',
+                                                                                                    'gstate',
+                                                                                                    'mark',
+                                                                                                    'save'])
         window.display()
         select.edit()
         if select.value:
@@ -259,22 +270,34 @@ class MainForm(npyscreen.FormBaseNew):
     def create(self):
         self.name = 'Dictionary Browser \xe2\x94\x80\xe2\x94\x80 (Press F1 for help)'
         self.add_handlers({curses.KEY_F1: self.usage,
-         ord('/'): self.search,
-         ord('f'): self.filter,
-         ord('r'): self.reset,
-         ord('q'): self.quit})
-        self.items = self.add(npyscreen.TitleText, name='Items total', value='0', editable=False)
-        self.add(npyscreen.TitleText, name='PS version', value='3010', editable=False)
-        self.search_btn = self.add(SearchButton, relx=33, rely=2, name='Search')
-        self.search_text = self.add(npyscreen.FixedText, relx=53, rely=2, editable=False)
-        self.filter_btn = self.add(FilterButton, relx=33, rely=3, name='Filter')
-        self.filter_text = self.add(npyscreen.FixedText, relx=53, rely=3, editable=False)
-        self.dict = self.add(Dict, name='Dictionary', scroll_exit=True, max_width=43, relx=2, rely=5, max_height=-2)
-        self.perms = self.add(Perms, name='Permissions', scroll_exit=True, rely=5, relx=46, max_height=6)
-        self.value = self.add(Value, name='Edit Value', scroll_exit=True, rely=11, relx=46, max_height=-2)
-        self.status = self.add(npyscreen.TitleText, name='Status', editable=False, value='Connected to laserjet.lan', rely=-3)
-        self.save = self.add(npyscreen.ButtonPress, name='Save Changes', rely=-3, relx=-27)
-        self.exit = self.add(npyscreen.ButtonPress, name='Exit', rely=-3, relx=-12)
+                           ord('/'): self.search,
+                           ord('f'): self.filter,
+                           ord('r'): self.reset,
+                           ord('q'): self.quit})
+        self.items = self.add(npyscreen.TitleText,
+                              name='Items total', value='0', editable=False)
+        self.add(npyscreen.TitleText, name='PS version',
+                 value='3010', editable=False)
+        self.search_btn = self.add(
+            SearchButton, relx=33, rely=2, name='Search')
+        self.search_text = self.add(
+            npyscreen.FixedText, relx=53, rely=2, editable=False)
+        self.filter_btn = self.add(
+            FilterButton, relx=33, rely=3, name='Filter')
+        self.filter_text = self.add(
+            npyscreen.FixedText, relx=53, rely=3, editable=False)
+        self.dict = self.add(Dict, name='Dictionary', scroll_exit=True,
+                             max_width=43, relx=2, rely=5, max_height=-2)
+        self.perms = self.add(Perms, name='Permissions',
+                              scroll_exit=True, rely=5, relx=46, max_height=6)
+        self.value = self.add(Value, name='Edit Value',
+                              scroll_exit=True, rely=11, relx=46, max_height=-2)
+        self.status = self.add(npyscreen.TitleText, name='Status',
+                               editable=False, value='Connected to laserjet.lan', rely=-3)
+        self.save = self.add(npyscreen.ButtonPress,
+                             name='Save Changes', rely=-3, relx=-27)
+        self.exit = self.add(npyscreen.ButtonPress,
+                             name='Exit', rely=-3, relx=-12)
         self.save.whenPressed = self.commit
         self.exit.whenPressed = self.quit
         self.update_dict()
