@@ -10,13 +10,13 @@ The main idea of PRET is to facilitate the communication between the end-user an
 
 ### Installation
 
-PRET only requires a Python2 interpreter. For colored output and SNMP support however, third party modules need to be installed:
+PRET only requires a Python3 interpreter. For colored output and SNMP support however, third party modules need to be installed:
 
-    # pip install colorama pysnmp
+    # pip3 install colorama pysnmp
 
 If running on a Windows console and Unicode characters are not displayed correctly, install the *win_unicode_console* module:
 
-    # pip install win_unicode_console
+    # pip3 install win_unicode_console
 
 For experimental, ‘driverless’ printing (see print command), ImageMagick and GhostScript need to be installed:
 
@@ -42,15 +42,15 @@ optional arguments:
 
 ###### Example usage:
 
-    $ ./pret.py laserjet.lan ps
-    $ ./pret.py /dev/usb/lp0 pjl
+    $ python3 ./pret.py laserjet.lan ps
+    $ python3 ./pret.py /dev/usb/lp0 pjl
 
 ###### Positional Arguments:
 
 PRET requires a valid target and a printer language as arguments. The target can either be the IP address/hostname of a network printer (with port 9100/tcp open) or a device like `/dev/usb/lp0` for a local USB printer. To quickly discover all network printers in your subnet using SNMP broadcast, simply run PRET without arguments:
 
 ```
-./pret.py
+python3 ./pret.py
 No target given, discovering local printers
 
 address          device                       uptime    status                 
@@ -80,7 +80,7 @@ The printer language to be abused must be one of `ps`, `pjl` or `pcl`. Not all l
 After connecting to a printer device, you will see the PRET shell and can execute various commands:
 
 ```
-$ ./pret.py laserjet.lan pjl
+$ python3 ./pret.py laserjet.lan pjl
       ________________
     _/_______________/|
    /___________/___//||   PRET | Printer Exploitation Toolkit v0.25
