@@ -56,7 +56,7 @@ def intro(quiet):
         print("  |_||=L==H==||_|__|/                                              ")
         print("                                                                   ")
         print("     (ASCII art by                                                 ")
-        print("     Jan Foerster)                                                 ")
+        print("    『TOMY』™ネイー )                                                 ")
         print("                                                                   ")
 
 # ----------------------------------------------------------------------
