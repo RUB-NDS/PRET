@@ -10,13 +10,13 @@ The main idea of PRET is to facilitate the communication between the end-user an
 
 ### Installation
 
-PRET only requires a Python2 interpreter. For colored output and SNMP support however, third party modules need to be installed:
+PRET only requires a Python3 interpreter. For colored output and SNMP support however, third party modules need to be installed:
 
-    # pip install colorama pysnmp
+    # python3 -m pip install colorama pysnmp
 
 If running on a Windows console and Unicode characters are not displayed correctly, install the *win_unicode_console* module:
 
-    # pip install win_unicode_console
+    # python3 -m pip install win_unicode_console
 
 For experimental, ‘driverless’ printing (see print command), ImageMagick and GhostScript need to be installed:
 
