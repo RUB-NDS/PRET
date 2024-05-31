@@ -404,6 +404,9 @@ class file():
 
     # append to local file
     def append(self, path, data):
+        # Ensure data is in bytes format
+        if isinstance(data, str):
+            data = data.encode('utf-8')
         self.write(path, data, 'ab+')
 
 # ----------------------------------------------------------------------

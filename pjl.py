@@ -738,7 +738,7 @@ class pjl(printer):
             commands = ["@PJL RNVRAM ADDRESS=" + str(n) for n in memspace]
             self.chitchat("Writing copy to " + lpath)
             if os.path.isfile(lpath):
-                file().write(lpath, "")  # empty file
+                file().write(lpath, b"")  # empty file
             for chunk in list(chunks(commands, steps)):
                 str_recv = self.cmd(c.EOL.join(chunk))
                 if not str_recv:
