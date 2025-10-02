@@ -1,0 +1,5 @@
+requests
+colorama
+win_unicode_console
+pysnmp-lextudio==5.0.31
+pyasn1==0.6.0

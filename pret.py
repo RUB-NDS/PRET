@@ -45,19 +45,19 @@ def usage():
 
 def intro(quiet):
     if not quiet:
-        print("      ________________                                             ")
-        print("    _/_______________/|                                            ")
-        print("   /___________/___//||   PRET | Printer Exploitation Toolkit v0.40")
-        print("  |===        |----| ||    by Jens Mueller <jens.a.mueller@rub.de> ")
-        print("  |           |   ô| ||                                            ")
-        print("  |___________|   ô| ||                                            ")
-        print("  | ||/.´---.||    | ||      「 pentesting tool that made          ")
-        print("  |-||/_____\||-.  | |´         dumpster diving obsolete‥ 」       ")
-        print("  |_||=L==H==||_|__|/                                              ")
-        print("                                                                   ")
-        print("     (ASCII art by                                                 ")
-        print("     Jan Foerster)                                                 ")
-        print("                                                                   ")
+        print(r"      ________________                                             ")
+        print(r"    _/_______________/|                                            ")
+        print(r"   /___________/___//||   PRET | Printer Exploitation Toolkit v0.40")
+        print(r"  |===        |----| ||    by Jens Mueller <jens.a.mueller@rub.de> ")
+        print(r"  |           |   ô| ||                                            ")
+        print(r"  |___________|   ô| ||                                            ")
+        print(r"  | ||/.´---.||    | ||      「 pentesting tool that made          ")
+        print(r"  |-||/_____\||-.  | |´         dumpster diving obsolete‥ 」       ")
+        print(r"  |_||=L==H==||_|__|/                                              ")
+        print(r"                                                                   ")
+        print(r"     (ASCII art by                                                 ")
+        print(r"     Jan Foerster)                                                 ")
+        print(r"                                                                   ")
 
 # ----------------------------------------------------------------------
 
